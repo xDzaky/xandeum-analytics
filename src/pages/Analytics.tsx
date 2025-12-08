@@ -96,16 +96,63 @@ export default function Analytics() {
   const stats = generateNetworkStats(nodes);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header with Health Score */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Network Analytics</h1>
-          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
-            Advanced analytics and visualizations of the Xandeum pNode network
+          <p className="mt-1 text-sm text-muted">
+            Advanced analytics and visualizations • {nodes.length} nodes analyzed
           </p>
         </div>
-        <HealthScore score={stats.networkHealth} />
+        <div className="card px-6 py-3">
+          <div className="flex items-center gap-3">
+            <div className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Health Score</div>
+            <HealthScore score={stats.networkHealth} />
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="stat-card card-hover">
+          <div className="flex items-start justify-between mb-3">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Most Common Version</span>
+            <div className="w-2 h-2 rounded-full bg-chart-2"></div>
+          </div>
+          <p className="text-2xl font-bold text-white font-mono mb-1">
+            {versionData[0]?.version || 'N/A'}
+          </p>
+          <p className="text-xs text-muted">
+            {versionData[0]?.count || 0} nodes using this version
+          </p>
+        </div>
+
+        <div className="stat-card card-hover">
+          <div className="flex items-start justify-between mb-3">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Top Location</span>
+            <div className="w-2 h-2 rounded-full bg-primary"></div>
+          </div>
+          <p className="text-2xl font-bold text-white mb-1">
+            {locationData[0]?.country || 'N/A'}
+          </p>
+          <p className="text-xs text-muted">
+            {locationData[0]?.count || 0} nodes in this location
+          </p>
+        </div>
+
+        <div className="stat-card card-hover">
+          <div className="flex items-start justify-between mb-3">
+            <span className="text-xs uppercase tracking-wide text-muted-foreground font-medium">Highest Uptime</span>
+            <div className="w-2 h-2 rounded-full bg-success"></div>
+          </div>
+          <p className="text-2xl font-bold text-success mb-1">
+            {uptimeData[0]?.uptime.toFixed(2) || 'N/A'}%
+          </p>
+          <p className="text-xs text-muted font-mono">
+            {uptimeData[0]?.name || 'N/A'}
+          </p>
+        </div>
       </div>
 
       {/* Timeline Chart - Full Width */}
@@ -119,39 +166,6 @@ export default function Analytics() {
 
       {/* Uptime Comparison - Full Width */}
       <UptimeComparisonChart data={uptimeData} />
-
-      {/* Summary Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-card rounded-lg border border-gray-800 p-6">
-          <h3 className="text-sm font-medium text-gray-400 mb-2">Most Common Version</h3>
-          <p className="text-2xl font-bold text-white font-mono">
-            {versionData[0]?.version || 'N/A'}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {versionData[0]?.count || 0} nodes using this version
-          </p>
-        </div>
-
-        <div className="bg-card rounded-lg border border-gray-800 p-6">
-          <h3 className="text-sm font-medium text-gray-400 mb-2">Top Location</h3>
-          <p className="text-2xl font-bold text-white">
-            {locationData[0]?.country || 'N/A'}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">
-            {locationData[0]?.count || 0} nodes in this location
-          </p>
-        </div>
-
-        <div className="bg-card rounded-lg border border-gray-800 p-6">
-          <h3 className="text-sm font-medium text-gray-400 mb-2">Highest Uptime</h3>
-          <p className="text-2xl font-bold text-white">
-            {uptimeData[0]?.uptime.toFixed(2) || 'N/A'}%
-          </p>
-          <p className="text-sm text-gray-500 mt-1 font-mono">
-            {uptimeData[0]?.name || 'N/A'}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }

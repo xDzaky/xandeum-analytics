@@ -4,34 +4,72 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
         primary: {
-          DEFAULT: 'rgb(139 92 246)',
-          foreground: 'rgb(255 255 255)',
+          DEFAULT: '#22c55e', // Tech Green
+          foreground: '#000000',
+          dark: '#16a34a',
+          light: '#4ade80',
         },
-        background: 'rgb(0 0 0)',
-        foreground: 'rgb(255 255 255)',
+        secondary: {
+          DEFAULT: '#3b82f6', // Tech Blue
+          foreground: '#ffffff',
+          dark: '#2563eb',
+          light: '#60a5fa',
+        },
+        background: '#050505', // Deep black
+        surface: '#0A0A0A', // Slightly lighter for cards
+        surfaceHover: '#121212',
+        foreground: '#e5e5e5', // Off-white text
         card: {
-          DEFAULT: 'rgb(15 15 15)',
-          foreground: 'rgb(255 255 255)',
+          DEFAULT: '#0A0A0A',
+          foreground: '#e5e5e5',
+          hover: '#121212',
         },
-        success: 'rgb(34 197 94)',
-        warning: 'rgb(234 179 8)',
-        error: 'rgb(239 68 68)',
-        info: 'rgb(59 130 246)',
+        border: {
+          DEFAULT: '#1F1F1F', // Subtle borders
+          light: '#262626',
+        },
+        success: '#22c55e',
+        warning: '#f59e0b',
+        error: '#ef4444',
+        info: '#3b82f6',
+        muted: {
+          DEFAULT: '#737373', // Neutral Gray
+          foreground: '#a3a3a3',
+        },
+        text: '#e5e5e5',
         chart: {
-          1: 'rgb(139 92 246)',
-          2: 'rgb(236 72 153)',
-          3: 'rgb(14 165 233)',
-          4: 'rgb(34 197 94)',
-          5: 'rgb(251 191 36)',
+          1: '#3b82f6',
+          2: '#22c55e',
+          3: '#f59e0b',
+          4: '#ec4899',
+          5: '#8b5cf6',
         },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
+      },
+      fontSize: {
+        '2xs': '0.65rem',
+      },
+      letterSpacing: {
+        tighter: '-0.04em',
+        tight: '-0.02em',
+        widest: '0.1em',
+      },
+      borderRadius: {
+        lg: '0.75rem',
+        md: '0.5rem',
+        sm: '0.375rem',
+      },
+      boxShadow: {
+        'card': '0 1px 3px 0 rgba(0, 0, 0, 0.3)',
+        'card-hover': '0 4px 6px -1px rgba(0, 0, 0, 0.4)',
       },
     },
   },

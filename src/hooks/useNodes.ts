@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { xandeumAPI } from '../services/api';
+import { historicalDataService } from '../services/historicalData';
 import type { PNode, NetworkStats } from '../types';
 
 /**
@@ -28,11 +29,24 @@ export function useNode(nodeId: string) {
 
 /**
  * Hook to fetch network statistics
+ * Also saves historical data for time-series charts
  */
 export function useNetworkStats() {
   return useQuery<NetworkStats, Error>({
     queryKey: ['network-stats'],
-    queryFn: () => xandeumAPI.getNetworkStats(),
+    queryFn: async () => {
+      const stats = await xandeumAPI.getNetworkStats();
+      
+      // Save snapshot to historical data
+      historicalDataService.addSnapshot(
+        stats.networkHealth,
+        stats.activeNodes,
+        stats.totalNodes,
+        stats.averageUptime
+      );
+      
+      return stats;
+    },
     staleTime: 30000,
     refetchInterval: 30000,
   });
@@ -49,3 +63,4 @@ export function useHealthCheck() {
     refetchInterval: 60000,
   });
 }
+
