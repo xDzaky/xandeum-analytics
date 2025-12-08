@@ -1,10 +1,12 @@
 import { useNodes } from '../hooks/useNodes';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import HealthScore from '../components/ui/HealthScore';
 import NetworkTimelineChart from '../components/charts/NetworkTimelineChart';
 import VersionDistributionChart from '../components/charts/VersionDistributionChart';
 import UptimeComparisonChart from '../components/charts/UptimeComparisonChart';
 import LocationDistributionChart from '../components/charts/LocationDistributionChart';
 import { useMemo } from 'react';
+import { generateNetworkStats } from '../utils/calculations';
 
 export default function Analytics() {
   const { data: nodes, isLoading } = useNodes();
@@ -91,13 +93,19 @@ export default function Analytics() {
     );
   }
 
+  const stats = generateNetworkStats(nodes);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">Network Analytics</h1>
-        <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
-          Advanced analytics and visualizations of the Xandeum pNode network
-        </p>
+      {/* Header with Health Score */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Network Analytics</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
+            Advanced analytics and visualizations of the Xandeum pNode network
+          </p>
+        </div>
+        <HealthScore score={stats.networkHealth} />
       </div>
 
       {/* Timeline Chart - Full Width */}

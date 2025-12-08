@@ -3,6 +3,7 @@ import StatsCard from '../components/ui/StatsCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
 import ExportButton from '../components/ui/ExportButton';
+import NetworkHealthGauge from '../components/ui/NetworkHealthGauge';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatPercentage, formatTimeAgo } from '../utils/formatters';
 import { generateNetworkStats } from '../utils/calculations';
@@ -117,6 +118,86 @@ export default function Dashboard() {
           icon={Zap}
           color="success"
         />
+      </div>
+
+      {/* Network Health Gauge Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Large Health Gauge */}
+        <div className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg border border-gray-700 p-8 flex items-center justify-center">
+          <NetworkHealthGauge value={stats.networkHealth} size="lg" />
+        </div>
+
+        {/* Health Metrics */}
+        <div className="lg:col-span-2 bg-card rounded-lg border border-gray-800 p-6">
+          <h3 className="text-lg font-semibold text-white mb-6">Network Health Metrics</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Node Availability</span>
+                <span className="text-sm font-medium text-white">
+                  {((stats.activeNodes / stats.totalNodes) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(stats.activeNodes / stats.totalNodes) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Average Uptime</span>
+                <span className="text-sm font-medium text-white">
+                  {stats.averageUptime.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${stats.averageUptime}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Storage Utilization</span>
+                <span className="text-sm font-medium text-white">
+                  {((stats.usedStorage / stats.totalStorage) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                  style={{ width: `${(stats.usedStorage / stats.totalStorage) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Network Reliability</span>
+                <span className="text-sm font-medium text-white">
+                  {stats.networkHealth.toFixed(0)}/100
+                </span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    stats.networkHealth >= 80
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                      : stats.networkHealth >= 60
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500'
+                      : 'bg-gradient-to-r from-red-500 to-pink-500'
+                  }`}
+                  style={{ width: `${stats.networkHealth}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Additional Stats Grid */}
