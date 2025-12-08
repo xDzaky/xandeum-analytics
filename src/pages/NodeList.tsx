@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useNodes } from '../hooks/useNodes';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -99,10 +100,16 @@ export default function NodeList() {
               {filteredNodes.map((node) => (
                 <tr
                   key={node.id}
-                  className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
+                  className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors group"
                 >
                   <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-white font-mono">
-                    {node.id}
+                    <Link 
+                      to={`/nodes/${node.id}`}
+                      className="text-purple-400 hover:text-purple-300 flex items-center gap-2 group-hover:underline"
+                    >
+                      {node.id}
+                      <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
                   </td>
                   <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-300 font-mono">
                     {formatPublicKey(node.publicKey)}

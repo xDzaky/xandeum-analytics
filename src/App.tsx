@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import NodeList from './pages/NodeList';
 import Analytics from './pages/Analytics';
 import About from './pages/About';
+import NodeDetailPage from './pages/NodeDetailPage';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -25,6 +26,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />
             <Route path="nodes" element={<NodeList />} />
+            <Route path="nodes/:id" element={<NodeDetailPage />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="about" element={<About />} />
           </Route>
