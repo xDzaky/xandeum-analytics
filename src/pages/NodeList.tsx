@@ -1,17 +1,21 @@
 import { useState } from 'react';
-import { Search, ExternalLink } from 'lucide-react';
+import { Search, ExternalLink, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useNodes } from '../hooks/useNodes';
+import { useFavorites } from '../hooks/useFavorites';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
 import ExportButton from '../components/ui/ExportButton';
+import FavoriteButton from '../components/ui/FavoriteButton';
 import { formatPercentage, formatPublicKey, formatTimeAgo } from '../utils/formatters';
 import { exportNodesToCSV, exportNodesToJSON } from '../utils/export';
 
 export default function NodeList() {
   const { data: nodes, isLoading } = useNodes();
+  const { favorites, toggleFavorite, isFavorite } = useFavorites();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   if (isLoading) {
     return (
@@ -37,8 +41,10 @@ export default function NodeList() {
       node.publicKey.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || node.status === statusFilter;
+    
+    const matchesFavorites = !showFavoritesOnly || isFavorite(node.id);
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesFavorites;
   });
 
   return (
@@ -94,6 +100,23 @@ export default function NodeList() {
           <option value="inactive">Inactive</option>
           <option value="syncing">Syncing</option>
         </select>
+        
+        {/* Favorites Filter Toggle */}
+        <button
+          onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+          className={`
+            px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2
+            ${showFavoritesOnly 
+              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' 
+              : 'bg-card text-gray-400 border border-gray-800 hover:border-yellow-500/50 hover:text-yellow-400'
+            }
+          `}
+        >
+          <Star className={`w-4 h-4 ${showFavoritesOnly ? 'fill-yellow-400' : ''}`} />
+          <span className="whitespace-nowrap">
+            Watchlist {favorites.length > 0 && `(${favorites.length})`}
+          </span>
+        </button>
       </div>
 
       {/* Results count */}
@@ -107,6 +130,7 @@ export default function NodeList() {
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-gray-800 bg-gray-900/50">
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 w-8"></th>
                 <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Node ID</th>
                 <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Public Key</th>
                 <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">IP Address</th>
@@ -122,6 +146,14 @@ export default function NodeList() {
                   key={node.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors group"
                 >
+                  <td className="py-3 px-3 sm:px-4">
+                    <FavoriteButton
+                      nodeId={node.id}
+                      isFavorite={isFavorite(node.id)}
+                      onToggle={toggleFavorite}
+                      size="sm"
+                    />
+                  </td>
                   <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-white font-mono">
                     <Link 
                       to={`/nodes/${node.id}`}

@@ -6,6 +6,8 @@ import { Copy, ArrowLeft, Activity, HardDrive, MapPin, Wifi, Clock, Server } fro
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
 import ExportButton from '../components/ui/ExportButton';
+import FavoriteButton from '../components/ui/FavoriteButton';
+import { useFavorites } from '../hooks/useFavorites';
 import { exportNodeDetails } from '../utils/export';
 
 // Generate historical data outside component
@@ -48,6 +50,7 @@ const generateStorageData = (baseUsed: number, capacity: number) => {
 export default function NodeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toggleFavorite, isFavorite } = useFavorites();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [historicalData] = useState(() => generateHistoricalData());
   const [currentTime, setCurrentTime] = useState(() => Date.now());
@@ -144,6 +147,13 @@ export default function NodeDetailPage() {
               <p className="text-gray-400">Complete information about this pNode</p>
             </div>
             <div className="flex items-center gap-3">
+              <FavoriteButton
+                nodeId={node.id}
+                isFavorite={isFavorite(node.id)}
+                onToggle={toggleFavorite}
+                size="lg"
+                showLabel
+              />
               <ExportButton
                 format="json"
                 onExport={() => exportNodeDetails(node)}
