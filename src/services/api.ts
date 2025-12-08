@@ -7,7 +7,7 @@ import type { PNode, NetworkStats, APIError } from '../types';
 
 class XandeumAPIService {
   private baseURL: string;
-  private cache: Map<string, { data: any; timestamp: number }>;
+  private cache: Map<string, { data: unknown; timestamp: number }>;
 
   constructor(baseURL: string = 'https://api.xandeum.network') {
     this.baseURL = baseURL;
@@ -76,7 +76,7 @@ class XandeumAPIService {
   /**
    * Set cache data
    */
-  private setCache(key: string, data: any): void {
+  private setCache(key: string, data: unknown): void {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
@@ -156,7 +156,7 @@ class XandeumAPIService {
     try {
       const data = await this.fetchWithErrorHandling<{ status: string }>('/api/v1/health');
       return { status: data.status as 'ok' | 'degraded' | 'down' };
-    } catch (error) {
+    } catch {
       return { status: 'down' };
     }
   }
@@ -164,23 +164,23 @@ class XandeumAPIService {
   /**
    * Transform raw API data to PNode format
    */
-  private transformNodeData(data: any[]): PNode[] {
+  private transformNodeData(data: PNode[]): PNode[] {
     return data.map(node => this.transformSingleNode(node));
   }
 
   /**
    * Transform single node data
    */
-  private transformSingleNode(node: any): PNode {
+  private transformSingleNode(node: PNode): PNode {
     return {
       id: node.id || node.publicKey,
-      publicKey: node.publicKey || node.pubkey || node.public_key,
-      ipAddress: node.ipAddress || node.ip || node.ip_address,
+      publicKey: node.publicKey,
+      ipAddress: node.ipAddress,
       port: node.port || 8000,
       version: node.version || '1.0.0',
       status: node.status || 'active',
-      lastSeen: new Date(node.lastSeen || node.last_seen || Date.now()),
-      firstSeen: new Date(node.firstSeen || node.first_seen || Date.now()),
+      lastSeen: new Date(node.lastSeen || Date.now()),
+      firstSeen: new Date(node.firstSeen || Date.now()),
       uptime: node.uptime || 99.9,
       location: node.location,
       performance: node.performance,

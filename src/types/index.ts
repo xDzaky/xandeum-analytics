@@ -30,7 +30,7 @@ export interface PNode {
   uptime: number;                // Uptime percentage (0-100)
   location?: Location;
   performance?: Performance;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface NetworkStats {

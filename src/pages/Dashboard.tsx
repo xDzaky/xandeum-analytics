@@ -32,16 +32,16 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Network Dashboard</h1>
-          <p className="mt-2 text-gray-400">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Network Dashboard</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
             Real-time overview of Xandeum pNode network
           </p>
         </div>
-        <div className="text-right">
-          <p className="text-sm text-gray-500">Last updated</p>
-          <p className="text-sm text-gray-300">
+        <div className="text-left sm:text-right">
+          <p className="text-xs sm:text-sm text-gray-500">Last updated</p>
+          <p className="text-xs sm:text-sm text-gray-300">
             {formatTimeAgo(new Date(dataUpdatedAt))}
           </p>
         </div>
@@ -186,15 +186,15 @@ export default function Dashboard() {
 
       {/* Recent Nodes Table Preview */}
       <div className="bg-card rounded-lg border border-gray-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-800">
-          <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-800">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div>
-              <h2 className="text-xl font-bold text-white">Recent Nodes</h2>
-              <p className="text-sm text-gray-400 mt-1">Latest 10 nodes in the network</p>
+              <h2 className="text-lg sm:text-xl font-bold text-white">Recent Nodes</h2>
+              <p className="text-xs sm:text-sm text-gray-400 mt-1">Latest 10 nodes in the network</p>
             </div>
             <a
               href="/nodes"
-              className="text-primary hover:text-primary/80 text-sm font-medium"
+              className="text-primary hover:text-primary/80 text-sm font-medium self-start sm:self-auto"
             >
               View All →
             </a>
@@ -203,27 +203,27 @@ export default function Dashboard() {
         
         {nodes && nodes.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[800px]">
               <thead>
                 <tr className="border-b border-gray-800 bg-gray-900/50">
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Node ID</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">IP Address</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Status</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Version</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Uptime</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Location</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Node ID</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">IP Address</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400">Status</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400">Version</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400">Uptime</th>
+                  <th className="text-left py-3 px-3 sm:px-6 text-xs sm:text-sm font-medium text-gray-400">Location</th>
                 </tr>
               </thead>
               <tbody>
                 {nodes.slice(0, 10).map((node) => (
                   <tr key={node.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
-                    <td className="py-3 px-6 text-sm text-white font-mono">{node.id}</td>
-                    <td className="py-3 px-6 text-sm text-gray-300">{node.ipAddress}</td>
-                    <td className="py-3 px-6">
+                    <td className="py-3 px-3 sm:px-6 text-xs sm:text-sm text-white font-mono">{node.id}</td>
+                    <td className="py-3 px-3 sm:px-6 text-xs sm:text-sm text-gray-300">{node.ipAddress}</td>
+                    <td className="py-3 px-3 sm:px-6">
                       <StatusBadge status={node.status} showPulse={node.status === 'active'} />
                     </td>
-                    <td className="py-3 px-6 text-sm text-gray-300 font-mono">{node.version}</td>
-                    <td className="py-3 px-6 text-sm">
+                    <td className="py-3 px-3 sm:px-6 text-xs sm:text-sm text-gray-300 font-mono">{node.version}</td>
+                    <td className="py-3 px-3 sm:px-6 text-xs sm:text-sm">
                       <span className={`font-medium ${
                         node.uptime >= 99 ? 'text-success' :
                         node.uptime >= 95 ? 'text-warning' :
@@ -232,7 +232,7 @@ export default function Dashboard() {
                         {formatPercentage(node.uptime)}
                       </span>
                     </td>
-                    <td className="py-3 px-6 text-sm text-gray-300">
+                    <td className="py-3 px-3 sm:px-6 text-xs sm:text-sm text-gray-300">
                       {node.location?.city || 'Unknown'}
                     </td>
                   </tr>

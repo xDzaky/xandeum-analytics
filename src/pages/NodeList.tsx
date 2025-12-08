@@ -42,8 +42,8 @@ export default function NodeList() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white">pNode Explorer</h1>
-        <p className="mt-2 text-gray-400">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">pNode Explorer</h1>
+        <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
           Browse and search all Xandeum pNodes
         </p>
       </div>
@@ -83,16 +83,16 @@ export default function NodeList() {
       {/* Nodes Table */}
       <div className="bg-card rounded-lg border border-gray-800 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-gray-800 bg-gray-900/50">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Node ID</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Public Key</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">IP Address</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Status</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Version</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Uptime</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-400">Last Seen</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Node ID</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Public Key</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">IP Address</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400">Status</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400">Version</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400">Uptime</th>
+                <th className="text-left py-3 px-3 sm:px-4 text-xs sm:text-sm font-medium text-gray-400 whitespace-nowrap">Last Seen</th>
               </tr>
             </thead>
             <tbody>
@@ -101,22 +101,22 @@ export default function NodeList() {
                   key={node.id}
                   className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors"
                 >
-                  <td className="py-3 px-4 text-sm text-white font-mono">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-white font-mono">
                     {node.id}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-300 font-mono">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-300 font-mono">
                     {formatPublicKey(node.publicKey)}
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-300">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-300">
                     {node.ipAddress}:{node.port}
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-3 sm:px-4">
                     <StatusBadge status={node.status} showPulse={node.status === 'active'} />
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-300">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-300">
                     {node.version}
                   </td>
-                  <td className="py-3 px-4 text-sm">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm">
                     <span className={`font-medium ${
                       node.uptime >= 99 ? 'text-success' :
                       node.uptime >= 95 ? 'text-warning' :
@@ -125,7 +125,7 @@ export default function NodeList() {
                       {formatPercentage(node.uptime)}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-sm text-gray-400">
+                  <td className="py-3 px-3 sm:px-4 text-xs sm:text-sm text-gray-400">
                     {formatTimeAgo(node.lastSeen)}
                   </td>
                 </tr>

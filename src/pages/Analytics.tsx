@@ -94,8 +94,8 @@ export default function Analytics() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-white">Network Analytics</h1>
-        <p className="mt-2 text-gray-400">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white">Network Analytics</h1>
+        <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
           Advanced analytics and visualizations of the Xandeum pNode network
         </p>
       </div>
