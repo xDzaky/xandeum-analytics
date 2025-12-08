@@ -1,0 +1,249 @@
+import { Activity, Database, TrendingUp, Zap } from 'lucide-react';
+import StatsCard from '../components/ui/StatsCard';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import StatusBadge from '../components/ui/StatusBadge';
+import { useNodes, useNetworkStats } from '../hooks/useNodes';
+import { formatNumber, formatPercentage, formatTimeAgo } from '../utils/formatters';
+import { generateNetworkStats } from '../utils/calculations';
+
+export default function Dashboard() {
+  const { data: nodes, isLoading: nodesLoading, dataUpdatedAt } = useNodes();
+  const { data: statsFromAPI, isLoading: statsLoading } = useNetworkStats();
+
+  if (nodesLoading || statsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  // Use stats from API or calculate from nodes
+  const stats = statsFromAPI || (nodes ? generateNetworkStats(nodes) : null);
+
+  if (!stats) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-400">Unable to load network statistics</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Network Dashboard</h1>
+          <p className="mt-2 text-gray-400">
+            Real-time overview of Xandeum pNode network
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-gray-500">Last updated</p>
+          <p className="text-sm text-gray-300">
+            {formatTimeAgo(new Date(dataUpdatedAt))}
+          </p>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard
+          title="Total Nodes"
+          value={formatNumber(stats.totalNodes)}
+          icon={Database}
+          color="info"
+        />
+        
+        <StatsCard
+          title="Active Nodes"
+          value={formatNumber(stats.activeNodes)}
+          icon={Activity}
+          color="success"
+        />
+        
+        <StatsCard
+          title="Network Health"
+          value={formatPercentage(stats.networkHealth)}
+          icon={TrendingUp}
+          color={stats.networkHealth > 90 ? 'success' : stats.networkHealth > 70 ? 'warning' : 'error'}
+          trend={{
+            direction: 'up',
+            percentage: 1.2,
+          }}
+        />
+        
+        <StatsCard
+          title="Average Uptime"
+          value={formatPercentage(stats.averageUptime)}
+          icon={Zap}
+          color="success"
+        />
+      </div>
+
+      {/* Additional Stats Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Node Status Distribution */}
+        <div className="bg-card rounded-lg border border-gray-800 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Node Status</h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <StatusBadge status="active" showPulse />
+                <span className="text-sm text-gray-300">Active</span>
+              </div>
+              <span className="text-sm font-medium text-white">
+                {stats.activeNodes}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <StatusBadge status="inactive" />
+                <span className="text-sm text-gray-300">Inactive</span>
+              </div>
+              <span className="text-sm font-medium text-white">
+                {stats.inactiveNodes}
+              </span>
+            </div>
+            {nodes && (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <StatusBadge status="syncing" />
+                  <span className="text-sm text-gray-300">Syncing</span>
+                </div>
+                <span className="text-sm font-medium text-white">
+                  {nodes.filter(n => n.status === 'syncing').length}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Version Distribution */}
+        <div className="bg-card rounded-lg border border-gray-800 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Version Distribution</h3>
+          <div className="space-y-3">
+            {nodes && Object.entries(
+              nodes.reduce((acc, node) => {
+                acc[node.version] = (acc[node.version] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            )
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([version, count]) => (
+                <div key={version} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300 font-mono">{version}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${(count / nodes.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-white w-8 text-right">
+                      {count}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Geographic Distribution */}
+        <div className="bg-card rounded-lg border border-gray-800 p-6">
+          <h3 className="text-lg font-semibold text-white mb-4">Top Locations</h3>
+          <div className="space-y-3">
+            {nodes && Object.entries(
+              nodes.reduce((acc, node) => {
+                const country = node.location?.country || 'Unknown';
+                acc[country] = (acc[country] || 0) + 1;
+                return acc;
+              }, {} as Record<string, number>)
+            )
+              .sort((a, b) => b[1] - a[1])
+              .slice(0, 5)
+              .map(([country, count]) => (
+                <div key={country} className="flex items-center justify-between">
+                  <span className="text-sm text-gray-300">{country}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 h-2 bg-gray-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-info"
+                        style={{ width: `${(count / nodes.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-white w-8 text-right">
+                      {count}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent Nodes Table Preview */}
+      <div className="bg-card rounded-lg border border-gray-800 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-800">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-white">Recent Nodes</h2>
+              <p className="text-sm text-gray-400 mt-1">Latest 10 nodes in the network</p>
+            </div>
+            <a
+              href="/nodes"
+              className="text-primary hover:text-primary/80 text-sm font-medium"
+            >
+              View All →
+            </a>
+          </div>
+        </div>
+        
+        {nodes && nodes.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-800 bg-gray-900/50">
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Node ID</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">IP Address</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Status</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Version</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Uptime</th>
+                  <th className="text-left py-3 px-6 text-sm font-medium text-gray-400">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nodes.slice(0, 10).map((node) => (
+                  <tr key={node.id} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition-colors">
+                    <td className="py-3 px-6 text-sm text-white font-mono">{node.id}</td>
+                    <td className="py-3 px-6 text-sm text-gray-300">{node.ipAddress}</td>
+                    <td className="py-3 px-6">
+                      <StatusBadge status={node.status} showPulse={node.status === 'active'} />
+                    </td>
+                    <td className="py-3 px-6 text-sm text-gray-300 font-mono">{node.version}</td>
+                    <td className="py-3 px-6 text-sm">
+                      <span className={`font-medium ${
+                        node.uptime >= 99 ? 'text-success' :
+                        node.uptime >= 95 ? 'text-warning' :
+                        'text-error'
+                      }`}>
+                        {formatPercentage(node.uptime)}
+                      </span>
+                    </td>
+                    <td className="py-3 px-6 text-sm text-gray-300">
+                      {node.location?.city || 'Unknown'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-center text-gray-400 py-8">No nodes available</p>
+        )}
+      </div>
+    </div>
+  );
+}
