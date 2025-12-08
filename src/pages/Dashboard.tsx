@@ -1,9 +1,9 @@
 import { Activity, Database, TrendingUp, Zap } from 'lucide-react';
 import StatsCard from '../components/ui/StatsCard';
-import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
 import ExportButton from '../components/ui/ExportButton';
 import NetworkHealthGauge from '../components/ui/NetworkHealthGauge';
+import { DashboardSkeleton } from '../components/ui/Skeleton';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatPercentage, formatTimeAgo } from '../utils/formatters';
 import { generateNetworkStats } from '../utils/calculations';
@@ -14,11 +14,7 @@ export default function Dashboard() {
   const { data: statsFromAPI, isLoading: statsLoading } = useNetworkStats();
 
   if (nodesLoading || statsLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // Use stats from API or calculate from nodes

@@ -3,10 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { xandeumAPI } from '../services/api';
 import { formatBytes, formatDuration, formatDate } from '../utils/formatters';
 import { Copy, ArrowLeft, Activity, HardDrive, MapPin, Wifi, Clock, Server } from 'lucide-react';
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
 import ExportButton from '../components/ui/ExportButton';
 import FavoriteButton from '../components/ui/FavoriteButton';
+import Tooltip from '../components/ui/Tooltip';
+import { NodeDetailSkeleton } from '../components/ui/Skeleton';
 import { useFavorites } from '../hooks/useFavorites';
 import { exportNodeDetails } from '../utils/export';
 
@@ -89,20 +91,7 @@ export default function NodeDetailPage() {
   const lastSeenDuration = node ? formatDuration(currentTime - node.lastSeen.getTime()) : '';
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-800 rounded w-48 mb-8"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-32 bg-gray-800 rounded-lg"></div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <NodeDetailSkeleton />;
   }
 
   if (error || !node) {
@@ -237,17 +226,16 @@ export default function NodeDetailPage() {
                   <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-blue-400 text-sm font-mono">
                     {node.ipAddress}:{node.port}
                   </code>
-                  <button
-                    onClick={() => copyToClipboard(`${node.ipAddress}:${node.port}`, 'ip')}
-                    className="p-2 hover:bg-gray-700 rounded transition-colors"
-                    title="Copy IP address"
-                  >
-                    <Copy className={`w-4 h-4 ${copiedField === 'ip' ? 'text-green-400' : 'text-gray-400'}`} />
-                  </button>
+                  <Tooltip content={copiedField === 'ip' ? 'Copied!' : 'Copy IP address'}>
+                    <button
+                      onClick={() => copyToClipboard(`${node.ipAddress}:${node.port}`, 'ip')}
+                      className="p-2 hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      aria-label="Copy IP address"
+                    >
+                      <Copy className={`w-4 h-4 ${copiedField === 'ip' ? 'text-green-400' : 'text-gray-400'}`} />
+                    </button>
+                  </Tooltip>
                 </div>
-                {copiedField === 'ip' && (
-                  <span className="text-green-400 text-xs mt-1 inline-block">✓ Copied!</span>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -348,7 +336,7 @@ export default function NodeDetailPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
                 <YAxis stroke="#9ca3af" domain={[90, 100]} style={{ fontSize: '12px' }} />
-                <Tooltip
+                <RechartsTooltip
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
                   labelStyle={{ color: '#9ca3af' }}
                 />
@@ -365,7 +353,7 @@ export default function NodeDetailPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
                 <XAxis dataKey="time" stroke="#9ca3af" style={{ fontSize: '12px' }} />
                 <YAxis stroke="#9ca3af" style={{ fontSize: '12px' }} />
-                <Tooltip
+                <RechartsTooltip
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
                   labelStyle={{ color: '#9ca3af' }}
                 />
@@ -394,7 +382,7 @@ export default function NodeDetailPage() {
                   style={{ fontSize: '12px' }}
                   tickFormatter={(value) => formatBytes(value)}
                 />
-                <Tooltip
+                <RechartsTooltip
                   contentStyle={{ backgroundColor: '#1f2937', border: '1px solid #374151', borderRadius: '8px' }}
                   labelStyle={{ color: '#9ca3af' }}
                   formatter={(value: number) => formatBytes(value)}

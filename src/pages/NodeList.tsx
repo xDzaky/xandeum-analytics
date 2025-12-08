@@ -85,7 +85,8 @@ export default function NodeList() {
             placeholder="Search by ID, IP, or Public Key..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-card border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary"
+            className="w-full pl-10 pr-4 py-2 bg-card border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/50"
+            aria-label="Search nodes"
           />
         </div>
 
@@ -93,7 +94,8 @@ export default function NodeList() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="px-4 py-2 bg-card border border-gray-800 rounded-lg text-white focus:outline-none focus:border-primary"
+          className="px-4 py-2 bg-card border border-gray-800 rounded-lg text-white focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/50"
+          aria-label="Filter by status"
         >
           <option value="all">All Status</option>
           <option value="active">Active</option>
@@ -106,11 +108,14 @@ export default function NodeList() {
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
           className={`
             px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2
+            focus:outline-none focus:ring-2 focus:ring-yellow-500
             ${showFavoritesOnly 
               ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/50' 
               : 'bg-card text-gray-400 border border-gray-800 hover:border-yellow-500/50 hover:text-yellow-400'
             }
           `}
+          aria-label={showFavoritesOnly ? 'Show all nodes' : 'Show watchlist only'}
+          aria-pressed={showFavoritesOnly}
         >
           <Star className={`w-4 h-4 ${showFavoritesOnly ? 'fill-yellow-400' : ''}`} />
           <span className="whitespace-nowrap">

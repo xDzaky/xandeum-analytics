@@ -32,11 +32,20 @@ export default function StatsCard({
         'bg-card rounded-lg border border-gray-800 p-6 hover:border-gray-700 transition-colors',
         className
       )}
+      role="region"
+      aria-label={`${title} statistics`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-gray-400">{title}</p>
-          <p className="mt-2 text-3xl font-bold text-white">{value}</p>
+          <p className="text-sm font-medium text-gray-400" id={`stat-${title.replace(/\s+/g, '-').toLowerCase()}`}>
+            {title}
+          </p>
+          <p 
+            className="mt-2 text-3xl font-bold text-white"
+            aria-labelledby={`stat-${title.replace(/\s+/g, '-').toLowerCase()}`}
+          >
+            {value}
+          </p>
           
           {trend && (
             <div className="mt-2 flex items-center space-x-1">
