@@ -2,9 +2,11 @@ import { Activity, Database, TrendingUp, Zap } from 'lucide-react';
 import StatsCard from '../components/ui/StatsCard';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
+import ExportButton from '../components/ui/ExportButton';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatPercentage, formatTimeAgo } from '../utils/formatters';
 import { generateNetworkStats } from '../utils/calculations';
+import { exportStatsToCSV, exportStatsToJSON, exportNodesToCSV, exportNodesToJSON } from '../utils/export';
 
 export default function Dashboard() {
   const { data: nodes, isLoading: nodesLoading, dataUpdatedAt } = useNodes();
@@ -39,11 +41,46 @@ export default function Dashboard() {
             Real-time overview of Xandeum pNode network
           </p>
         </div>
-        <div className="text-left sm:text-right">
-          <p className="text-xs sm:text-sm text-gray-500">Last updated</p>
-          <p className="text-xs sm:text-sm text-gray-300">
-            {formatTimeAgo(new Date(dataUpdatedAt))}
-          </p>
+        <div className="flex flex-col sm:items-end gap-2">
+          <div className="text-left sm:text-right">
+            <p className="text-xs sm:text-sm text-gray-500">Last updated</p>
+            <p className="text-xs sm:text-sm text-gray-300">
+              {formatTimeAgo(new Date(dataUpdatedAt))}
+            </p>
+          </div>
+          {/* Export Buttons */}
+          <div className="flex gap-2">
+            <ExportButton
+              format="csv"
+              onExport={() => exportStatsToCSV(stats)}
+              label="Stats CSV"
+              size="sm"
+            />
+            <ExportButton
+              format="json"
+              onExport={() => exportStatsToJSON(stats)}
+              label="Stats JSON"
+              size="sm"
+            />
+            {nodes && (
+              <>
+                <ExportButton
+                  format="csv"
+                  onExport={() => exportNodesToCSV(nodes)}
+                  label="Nodes CSV"
+                  size="sm"
+                  variant="primary"
+                />
+                <ExportButton
+                  format="json"
+                  onExport={() => exportNodesToJSON(nodes)}
+                  label="Nodes JSON"
+                  size="sm"
+                  variant="primary"
+                />
+              </>
+            )}
+          </div>
         </div>
       </div>
 

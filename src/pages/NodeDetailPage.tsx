@@ -5,6 +5,8 @@ import { formatBytes, formatDuration, formatDate } from '../utils/formatters';
 import { Copy, ArrowLeft, Activity, HardDrive, MapPin, Wifi, Clock, Server } from 'lucide-react';
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useState, useEffect } from 'react';
+import ExportButton from '../components/ui/ExportButton';
+import { exportNodeDetails } from '../utils/export';
 
 // Generate historical data outside component
 const generateHistoricalData = () => {
@@ -141,11 +143,19 @@ export default function NodeDetailPage() {
               <h1 className="text-3xl font-bold text-white mb-2">Node Details</h1>
               <p className="text-gray-400">Complete information about this pNode</p>
             </div>
-            <span
-              className={`px-4 py-2 rounded-lg border ${statusColors[node.status]} font-medium text-sm uppercase`}
-            >
-              {node.status}
-            </span>
+            <div className="flex items-center gap-3">
+              <ExportButton
+                format="json"
+                onExport={() => exportNodeDetails(node)}
+                label="Export"
+                size="sm"
+              />
+              <span
+                className={`px-4 py-2 rounded-lg border ${statusColors[node.status]} font-medium text-sm uppercase`}
+              >
+                {node.status}
+              </span>
+            </div>
           </div>
         </div>
 

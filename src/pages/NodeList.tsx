@@ -4,7 +4,9 @@ import { Link } from 'react-router-dom';
 import { useNodes } from '../hooks/useNodes';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
+import ExportButton from '../components/ui/ExportButton';
 import { formatPercentage, formatPublicKey, formatTimeAgo } from '../utils/formatters';
+import { exportNodesToCSV, exportNodesToJSON } from '../utils/export';
 
 export default function NodeList() {
   const { data: nodes, isLoading } = useNodes();
@@ -41,12 +43,30 @@ export default function NodeList() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-white">pNode Explorer</h1>
-        <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
-          Browse and search all Xandeum pNodes
-        </p>
+      {/* Header with Export Buttons */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">pNode Explorer</h1>
+          <p className="mt-1 sm:mt-2 text-sm sm:text-base text-gray-400">
+            Browse and search all Xandeum pNodes
+          </p>
+        </div>
+        
+        {/* Export Buttons */}
+        <div className="flex gap-2">
+          <ExportButton
+            format="csv"
+            onExport={() => exportNodesToCSV(filteredNodes)}
+            label="CSV"
+            size="sm"
+          />
+          <ExportButton
+            format="json"
+            onExport={() => exportNodesToJSON(filteredNodes)}
+            label="JSON"
+            size="sm"
+          />
+        </div>
       </div>
 
       {/* Filters */}
