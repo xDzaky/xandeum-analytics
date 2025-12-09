@@ -3,14 +3,22 @@ import NetworkHealthTimeline from '../components/dashboard/NetworkHealthTimeline
 import GlobalDistributionMap from '../components/dashboard/GlobalDistributionMap';
 import InsightsPanel from '../components/dashboard/InsightsPanel';
 import VersionDistribution from '../components/dashboard/VersionDistribution';
+import NodeDetailsModal from '../components/modals/NodeDetailsModal';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatTimeAgo } from '../utils/formatters';
 import { generateNetworkStats } from '../utils/calculations';
 import { Server, Globe, Wifi, TriangleAlert, MoreHorizontal, ChevronRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import type { PNode } from '../types';
 
 export default function Dashboard() {
   const { data: nodes, isLoading: nodesLoading, dataUpdatedAt } = useNodes();
   const { data: statsFromAPI, isLoading: statsLoading } = useNetworkStats();
+  const navigate = useNavigate();
+  const [nodeFilter, setNodeFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedNode, setSelectedNode] = useState<PNode | null>(null);
 
   if (nodesLoading || statsLoading) {
     return <DashboardSkeleton />;
@@ -18,6 +26,19 @@ export default function Dashboard() {
 
   // Use stats from API or calculate from nodes
   const stats = statsFromAPI || (nodes ? generateNetworkStats(nodes) : null);
+
+  // Filter nodes
+  const filteredNodes = nodes?.filter(node => {
+    const matchesFilter = 
+      nodeFilter === 'all' ? true :
+      nodeFilter === 'online' ? node.status === 'active' :
+      node.status !== 'active';
+    
+    const matchesSearch = searchQuery === '' || 
+      node.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
 
   if (!stats) {
     return (
@@ -192,12 +213,12 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[400px]">
         {/* 1. Insights & Events (Tabs) */}
         <div className="bg-surface border border-border rounded-xl flex flex-col overflow-hidden">
-          <InsightsPanel />
+          <InsightsPanel nodes={nodes} />
         </div>
 
         {/* 2. Global Distribution Map */}
         <div className="bg-surface border border-border rounded-xl p-0 relative overflow-hidden flex flex-col">
-          <GlobalDistributionMap />
+          <GlobalDistributionMap nodes={nodes} />
         </div>
 
         {/* 3. Node Search & List */}
@@ -210,21 +231,48 @@ export default function Dashboard() {
               <input 
                 type="text" 
                 placeholder="Search node ID..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full bg-black/40 border border-border rounded-md pl-8 pr-3 py-1.5 text-xs text-white placeholder-muted focus:outline-none focus:border-primary/50 font-mono transition-colors"
               />
             </div>
             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
-              <button className="px-2 py-1 text-[10px] font-medium rounded bg-white/10 text-white whitespace-nowrap">All</button>
-              <button className="px-2 py-1 text-[10px] font-medium rounded hover:bg-white/5 text-muted hover:text-white whitespace-nowrap">Online</button>
-              <button className="px-2 py-1 text-[10px] font-medium rounded hover:bg-white/5 text-muted hover:text-white whitespace-nowrap">Offline</button>
+              <button 
+                onClick={() => setNodeFilter('all')}
+                className={`px-2 py-1 text-[10px] font-medium rounded whitespace-nowrap ${
+                  nodeFilter === 'all' ? 'bg-white/10 text-white' : 'hover:bg-white/5 text-muted hover:text-white'
+                }`}
+              >
+                All
+              </button>
+              <button 
+                onClick={() => setNodeFilter('online')}
+                className={`px-2 py-1 text-[10px] font-medium rounded whitespace-nowrap ${
+                  nodeFilter === 'online' ? 'bg-success/10 text-success border border-success/20' : 'hover:bg-white/5 text-muted hover:text-white'
+                }`}
+              >
+                Online
+              </button>
+              <button 
+                onClick={() => setNodeFilter('offline')}
+                className={`px-2 py-1 text-[10px] font-medium rounded whitespace-nowrap ${
+                  nodeFilter === 'offline' ? 'bg-warning/10 text-warning border border-warning/20' : 'hover:bg-white/5 text-muted hover:text-white'
+                }`}
+              >
+                Offline
+              </button>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-left border-collapse">
               <tbody className="divide-y divide-border/50 text-xs">
-                {nodes?.slice(0, 4).map((node) => (
-                  <tr key={node.id} className="group hover:bg-white/5 transition-colors cursor-pointer">
+                {filteredNodes?.slice(0, 4).map((node) => (
+                  <tr 
+                    key={node.id} 
+                    onClick={() => setSelectedNode(node)}
+                    className="group hover:bg-white/5 transition-colors cursor-pointer"
+                  >
                     <td className="p-3 pl-4">
                       <div className="flex items-center gap-2">
                         <div className={`w-1.5 h-1.5 rounded-full ${node.status === 'active' ? 'bg-success' : 'bg-warning animate-pulse'}`}></div>
@@ -253,8 +301,17 @@ export default function Dashboard() {
               </tbody>
             </table>
           </div>
-          <div className="p-2 border-t border-border text-[10px] text-center text-muted">
-            Showing 4 of {stats.totalNodes} nodes
+          <div className="p-2 border-t border-border flex items-center justify-between">
+            <span className="text-[10px] text-muted">
+              Showing {Math.min(4, filteredNodes?.length || 0)} of {filteredNodes?.length || 0} nodes
+            </span>
+            <button 
+              onClick={() => navigate('/nodes')}
+              className="text-[10px] text-primary hover:text-primary/80 font-medium transition-colors flex items-center gap-1"
+            >
+              View All
+              <ChevronRight className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </div>
@@ -277,6 +334,14 @@ export default function Dashboard() {
         <span>Xandeum LATTICE // Updated {formatTimeAgo(new Date(dataUpdatedAt))}</span>
         <span>{stats.totalNodes} data points processed</span>
       </div>
+
+      {/* Node Details Modal */}
+      {selectedNode && (
+        <NodeDetailsModal 
+          node={selectedNode} 
+          onClose={() => setSelectedNode(null)} 
+        />
+      )}
     </div>
   );
 }
