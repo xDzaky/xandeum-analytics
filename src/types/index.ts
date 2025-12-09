@@ -16,6 +16,9 @@ export interface Performance {
   storageCapacity: number;     // bytes
   storageUsed: number;         // bytes
   bandwidth: number;           // bytes/s
+  rpcPort?: number;            // RPC port (optional)
+  shredVersion?: number;       // Shred version (optional)
+  featureSet?: number;         // Feature set (optional)
 }
 
 export interface PNode {

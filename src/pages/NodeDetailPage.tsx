@@ -7,7 +7,6 @@ import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip 
 import { useState, useEffect } from 'react';
 import ExportButton from '../components/ui/ExportButton';
 import FavoriteButton from '../components/ui/FavoriteButton';
-import Tooltip from '../components/ui/Tooltip';
 import { NodeDetailSkeleton } from '../components/ui/Skeleton';
 import { useFavorites } from '../hooks/useFavorites';
 import { exportNodeDetails } from '../utils/export';
