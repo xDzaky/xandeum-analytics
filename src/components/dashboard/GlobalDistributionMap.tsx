@@ -1,134 +1,196 @@
 /**
- * Global Distribution Map
- * Shows node distribution across continents with real world map
+ * Global Distribution
+ * Shows node distribution by location in a simple, clear format
  */
 
-import { MapPin } from 'lucide-react';
+import { MapPin, Globe2, TrendingUp } from 'lucide-react';
+import { useMemo } from 'react';
 import type { PNode } from '../../types';
 
 interface GlobalDistributionMapProps {
   nodes?: PNode[];
 }
 
+interface LocationStats {
+  city: string;
+  country: string;
+  totalNodes: number;
+  activeNodes: number;
+  offlineNodes: number;
+  percentage: number;
+}
+
 export default function GlobalDistributionMap({ nodes }: GlobalDistributionMapProps) {
-  const offlineCount = nodes?.filter(n => n.status !== 'active').length || 0;
   const totalNodes = nodes?.length || 0;
-  
+
   // Group nodes by location
-  const locationCounts = nodes?.reduce((acc, node) => {
-    const location = node.location?.city || 'Unknown';
-    acc[location] = (acc[location] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>) || {};
-  
-  const topLocations = Object.entries(locationCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 8);
+  const locationStats = useMemo(() => {
+    if (!nodes) return [];
+    
+    const locationMap = new Map<string, LocationStats>();
+    
+    nodes.forEach(node => {
+      if (node.location) {
+        const key = `${node.location.city}, ${node.location.country}`;
+        const existing = locationMap.get(key);
+        
+        if (existing) {
+          existing.totalNodes++;
+          if (node.status === 'active') {
+            existing.activeNodes++;
+          } else {
+            existing.offlineNodes++;
+          }
+        } else {
+          locationMap.set(key, {
+            city: node.location.city,
+            country: node.location.country,
+            totalNodes: 1,
+            activeNodes: node.status === 'active' ? 1 : 0,
+            offlineNodes: node.status !== 'active' ? 1 : 0,
+            percentage: 0,
+          });
+        }
+      }
+    });
+    
+    const locations = Array.from(locationMap.values());
+    
+    // Calculate percentages
+    locations.forEach(loc => {
+      loc.percentage = (loc.totalNodes / totalNodes) * 100;
+    });
+    
+    // Sort by total nodes descending
+    return locations.sort((a, b) => b.totalNodes - a.totalNodes);
+  }, [nodes, totalNodes]);
+
+  const totalLocations = locationStats.length;
+  const activeCount = nodes?.filter(n => n.status === 'active').length || 0;
+  const offlineCount = totalNodes - activeCount;
 
   return (
     <>
-      <div className="p-4 absolute top-0 left-0 z-10 w-full flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-          <h3 className="text-xs font-medium text-white tracking-widest uppercase">Global Distribution</h3>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-3 border-b border-border/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Globe2 className="w-4 h-4 text-primary" />
+            <h3 className="text-xs font-medium text-white tracking-widest uppercase">Global Distribution</h3>
+          </div>
+          <div className="text-[10px] text-muted">
+            {totalLocations} {totalLocations === 1 ? 'location' : 'locations'}
+          </div>
         </div>
-        <span className="text-[10px] font-mono text-muted bg-black/50 px-2 py-1 rounded border border-border">
-          {offlineCount} nodes offline
-        </span>
       </div>
-      
-      {/* World Map Visual */}
-      <div className="flex-1 bg-[#080808] relative overflow-hidden">
-        {/* SVG World Map */}
-        <svg className="w-full h-full opacity-20" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
-          {/* Simplified World Map Continents */}
-          <g fill="#1a1a1a" stroke="#333" strokeWidth="0.5">
-            {/* North America */}
-            <path d="M 50,80 L 80,60 L 120,50 L 150,70 L 180,60 L 190,90 L 170,120 L 140,140 L 100,130 L 70,110 Z" />
-            
-            {/* South America */}
-            <path d="M 150,180 L 170,160 L 190,170 L 200,200 L 210,240 L 200,270 L 180,280 L 160,270 L 150,240 Z" />
-            
-            {/* Europe */}
-            <path d="M 380,70 L 420,60 L 450,70 L 460,90 L 440,110 L 410,100 L 390,85 Z" />
-            
-            {/* Africa */}
-            <path d="M 380,130 L 420,120 L 450,140 L 470,180 L 460,230 L 440,250 L 410,240 L 390,200 L 380,160 Z" />
-            
-            {/* Asia */}
-            <path d="M 480,60 L 550,50 L 620,60 L 680,80 L 700,110 L 680,140 L 640,150 L 600,140 L 560,120 L 520,100 Z" />
-            
-            {/* Australia */}
-            <path d="M 620,240 L 660,230 L 700,250 L 690,280 L 660,290 L 630,280 Z" />
-          </g>
-        </svg>
-        
-        {/* Active Node Locations (Animated Dots) */}
-        <svg className="w-full h-full absolute top-0 left-0" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="1" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          
-          {/* Node dots based on actual locations */}
-          <g>
-            {/* North America */}
-            <circle cx="120" cy="90" r="4" fill="url(#nodeGlow)" className="animate-pulse" />
-            <circle cx="150" cy="100" r="3" fill="#3b82f6" opacity="0.8" />
-            
-            {/* Europe */}
-            <circle cx="420" cy="85" r="5" fill="url(#nodeGlow)" className="animate-pulse" style={{ animationDelay: '0.3s' }} />
-            <circle cx="440" cy="95" r="3" fill="#3b82f6" opacity="0.8" />
-            <circle cx="390" cy="80" r="3" fill="#3b82f6" opacity="0.8" />
-            
-            {/* Asia */}
-            <circle cx="600" cy="100" r="6" fill="url(#nodeGlow)" className="animate-pulse" style={{ animationDelay: '0.6s' }} />
-            <circle cx="640" cy="110" r="4" fill="#3b82f6" opacity="0.8" />
-            <circle cx="580" cy="95" r="3" fill="#3b82f6" opacity="0.8" />
-            <circle cx="660" cy="120" r="3" fill="#3b82f6" opacity="0.8" />
-            
-            {/* Australia */}
-            <circle cx="660" cy="260" r="3" fill="#3b82f6" opacity="0.8" />
-            
-            {/* Africa */}
-            <circle cx="430" cy="180" r="3" fill="#3b82f6" opacity="0.8" />
-            
-            {/* South America */}
-            <circle cx="180" cy="220" r="3" fill="#3b82f6" opacity="0.8" />
-          </g>
-          
-          {/* Connection lines */}
-          <g stroke="#3b82f6" strokeWidth="0.5" opacity="0.2">
-            <line x1="120" y1="90" x2="420" y2="85" />
-            <line x1="420" y1="85" x2="600" y2="100" />
-            <line x1="600" y1="100" x2="660" y2="260" />
-          </g>
-        </svg>
-        
-        {/* Location Stats Overlay */}
-        <div className="absolute top-16 left-4 right-4 flex flex-wrap gap-2">
-          {topLocations.slice(0, 3).map(([location, count]) => (
-            <div key={location} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-black/60 border border-primary/20 backdrop-blur-sm">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-              <span className="text-[9px] text-white font-medium">{location}</span>
-              <span className="text-[9px] text-muted">{count}</span>
+
+      {/* Location List */}
+      <div className="flex-1 overflow-y-auto px-4 py-2">
+        {locationStats.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-8">
+            <MapPin className="w-8 h-8 text-muted/30 mb-2" />
+            <p className="text-xs text-muted">No location data available</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {locationStats.map((location, index) => (
+              <div 
+                key={`${location.city}-${location.country}`}
+                className="group relative bg-surface/50 hover:bg-surface border border-border/30 hover:border-border-light rounded-lg p-3 transition-all cursor-pointer"
+              >
+                {/* Rank Badge */}
+                <div className="absolute -left-1 -top-1 w-5 h-5 bg-primary rounded-full flex items-center justify-center text-[9px] font-bold text-black">
+                  {index + 1}
+                </div>
+
+                <div className="flex items-start justify-between gap-3">
+                  {/* Location Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <MapPin className="w-3 h-3 text-muted flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium text-white truncate">
+                          {location.city}
+                        </div>
+                        <div className="text-[10px] text-muted truncate">
+                          {location.country}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="mt-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] text-muted">Distribution</span>
+                        <span className="text-[9px] text-white font-mono">
+                          {location.percentage.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 bg-border/50 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
+                          style={{ width: `${location.percentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stats Row */}
+                    <div className="flex items-center gap-3 mt-2 text-[10px]">
+                      <div className="flex items-center gap-1">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
+                        <span className="text-green-500 font-mono">{location.activeNodes}</span>
+                        <span className="text-muted">online</span>
+                      </div>
+                      {location.offlineNodes > 0 && (
+                        <div className="flex items-center gap-1">
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
+                          <span className="text-red-500 font-mono">{location.offlineNodes}</span>
+                          <span className="text-muted">offline</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Node Count */}
+                  <div className="flex flex-col items-end gap-1">
+                    <div className="text-2xl font-bold text-white font-mono">
+                      {location.totalNodes}
+                    </div>
+                    <div className="text-[9px] text-muted uppercase">
+                      {location.totalNodes === 1 ? 'node' : 'nodes'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Hover Effect */}
+                <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg pointer-events-none"></div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Stats */}
+      <div className="px-4 py-3 border-t border-border/50 bg-black/20">
+        <div className="flex items-center justify-between text-[10px]">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span className="text-muted">Online</span>
+              <span className="text-green-500 font-mono font-medium">{activeCount}</span>
             </div>
-          ))}
-        </div>
-        
-        {/* Bottom Info */}
-        <div className="absolute bottom-6 w-full text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 border border-white/10 backdrop-blur-sm">
-            <MapPin className="w-3 h-3 text-secondary" />
-            <span className="text-[10px] text-muted">
-              {totalNodes} nodes across {Object.keys(locationCounts).length} locations
-            </span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-red-500"></div>
+              <span className="text-muted">Offline</span>
+              <span className="text-red-500 font-mono font-medium">{offlineCount}</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-1 text-muted">
+            <TrendingUp className="w-3 h-3" />
+            <span>{totalLocations} locations</span>
           </div>
         </div>
       </div>
     </>
   );
 }
-

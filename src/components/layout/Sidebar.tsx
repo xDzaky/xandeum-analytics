@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutGrid, Globe, Server, Activity, Settings } from 'lucide-react';
+import { LayoutGrid, Globe, Server, Activity } from 'lucide-react';
 
 export default function Sidebar() {
   const location = useLocation();
@@ -19,7 +19,7 @@ export default function Sidebar() {
   ];
 
   return (
-    <aside className="w-16 flex flex-col items-center border-r border-border bg-surface/50 backdrop-blur-md z-30 shrink-0">
+    <aside className="w-16 h-screen flex flex-col items-center border-r border-border bg-surface/50 backdrop-blur-md z-30 shrink-0">
       {/* Logo */}
       <div className="h-16 flex items-center justify-center border-b border-border/50 w-full">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-white">
@@ -46,16 +46,6 @@ export default function Sidebar() {
           </Link>
         ))}
       </nav>
-
-      {/* Bottom Section */}
-      <div className="py-6 flex flex-col gap-4 w-full items-center border-t border-border/50">
-        <button className="w-10 h-10 rounded-lg text-muted hover:text-white hover:bg-white/5 flex items-center justify-center transition-all">
-          <Settings className="w-5 h-5" />
-        </button>
-        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-[10px] font-bold text-black border border-white/20">
-          XA
-        </div>
-      </div>
     </aside>
   );
 }

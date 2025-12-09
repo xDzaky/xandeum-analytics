@@ -3,6 +3,10 @@ import NetworkHealthTimeline from '../components/dashboard/NetworkHealthTimeline
 import GlobalDistributionMap from '../components/dashboard/GlobalDistributionMap';
 import InsightsPanel from '../components/dashboard/InsightsPanel';
 import VersionDistribution from '../components/dashboard/VersionDistribution';
+import AlertsPanel from '../components/dashboard/AlertsPanel';
+import NetworkTopology from '../components/dashboard/NetworkTopology';
+import PerformanceMetrics from '../components/dashboard/PerformanceMetrics';
+import NetworkActivity from '../components/dashboard/NetworkActivity';
 import NodeDetailsModal from '../components/modals/NodeDetailsModal';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatTimeAgo } from '../utils/formatters';
@@ -50,8 +54,101 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Network Dashboard</h1>
+          <p className="text-sm text-muted mt-1">Real-time pNode monitoring and analytics</p>
+        </div>
+        <div className="text-xs text-muted">
+          Last updated: {formatTimeAgo(new Date(dataUpdatedAt))}
+        </div>
+      </div>
+
+      {/* Top Stats Grid - 4 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Nodes */}
+        <div className="bg-surface border border-border rounded-xl p-5 hover:border-border-light transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-muted uppercase tracking-wider">Total Nodes</span>
+            <Server className="w-4 h-4 text-blue-500" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-white">{formatNumber(stats.totalNodes)}</span>
+          </div>
+          <div className="mt-2 text-xs text-muted">
+            Network participants
+          </div>
+        </div>
+
+        {/* Active Nodes */}
+        <div className="bg-surface border border-border rounded-xl p-5 hover:border-border-light transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-muted uppercase tracking-wider">Active Nodes</span>
+            <Wifi className="w-4 h-4 text-green-500" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-green-500">{formatNumber(stats.activeNodes)}</span>
+            <span className="text-sm text-muted">/ {stats.totalNodes}</span>
+          </div>
+          <div className="mt-2 text-xs text-muted">
+            {((stats.activeNodes / stats.totalNodes) * 100).toFixed(1)}% online
+          </div>
+        </div>
+
+        {/* Network Health */}
+        <div className="bg-surface border border-border rounded-xl p-5 hover:border-border-light transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-muted uppercase tracking-wider">Network Health</span>
+            <Globe className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-white">{Math.round(stats.networkHealth)}</span>
+            <span className="text-sm text-muted">/ 100</span>
+          </div>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all ${
+                  stats.networkHealth >= 90 ? 'bg-green-500' : 
+                  stats.networkHealth >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${stats.networkHealth}%` }}
+              />
+            </div>
+            <span className={`text-xs font-medium ${
+              stats.networkHealth >= 90 ? 'text-green-500' : 
+              stats.networkHealth >= 70 ? 'text-yellow-500' : 'text-red-500'
+            }`}>
+              {stats.networkHealth >= 90 ? 'Excellent' : stats.networkHealth >= 70 ? 'Good' : 'Warning'}
+            </span>
+          </div>
+        </div>
+
+        {/* Average Uptime */}
+        <div className="bg-surface border border-border rounded-xl p-5 hover:border-border-light transition-all">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-medium text-muted uppercase tracking-wider">Average Uptime</span>
+            {stats.averageUptime >= 95 ? (
+              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            ) : (
+              <TriangleAlert className="w-4 h-4 text-yellow-500" />
+            )}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-white">{stats.averageUptime.toFixed(1)}</span>
+            <span className="text-sm text-muted">%</span>
+          </div>
+          <div className="mt-2 text-xs text-muted">
+            Across all nodes
+          </div>
+        </div>
+      </div>
+
       {/* Top Bento Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:h-[280px]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:h-[280px]" style={{ display: 'none' }}>
         {/* 1. Health Score (Tall Card) */}
         <div className="lg:col-span-1 lg:row-span-1 bg-surface border border-border rounded-xl p-6 relative overflow-hidden group hover:border-border-light transition-all flex flex-col justify-between">
           <div className="flex justify-between items-start">
@@ -314,6 +411,21 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* New Advanced Analytics Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:h-[450px]">
+        {/* Network Topology Visualization */}
+        <NetworkTopology nodes={nodes} />
+        
+        {/* Performance Metrics Comparison */}
+        <PerformanceMetrics nodes={nodes} />
+        
+        {/* Real-time Network Activity */}
+        <NetworkActivity nodes={nodes} />
+        
+        {/* Alerts Panel */}
+        <AlertsPanel nodes={nodes} />
       </div>
 
       {/* Footer / Version Dist */}

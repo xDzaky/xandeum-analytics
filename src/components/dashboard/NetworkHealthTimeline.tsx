@@ -4,10 +4,13 @@
  */
 
 import { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { historicalDataService } from '../../services/historicalData';
 
 type TimePeriod = '1h' | '6h' | '24h' | '7d';
+
+// Warning threshold - health below this value will trigger warning
+const WARNING_THRESHOLD = 75;
 
 interface ChartDataPoint {
   time: string;
@@ -60,6 +63,9 @@ export default function NetworkHealthTimeline() {
     };
   }, [selectedPeriod]);
 
+  // Check if current health is below warning threshold
+  const isWarning = chartData.length > 0 && chartData[chartData.length - 1].health < WARNING_THRESHOLD;
+
   const periods: { value: TimePeriod; label: string }[] = [
     { value: '1h', label: '1h' },
     { value: '6h', label: '6h' },
@@ -102,6 +108,10 @@ export default function NetworkHealthTimeline() {
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
               <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
             </linearGradient>
+            <linearGradient id="warningGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor="#ef4444" stopOpacity={0.15} />
+              <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+            </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.3} />
           <XAxis 
@@ -118,6 +128,20 @@ export default function NetworkHealthTimeline() {
             tick={{ fill: '#737373' }}
             ticks={[60, 70, 80, 90, 100]}
           />
+          {/* Warning threshold line */}
+          <ReferenceLine 
+            y={WARNING_THRESHOLD} 
+            stroke="#ef4444" 
+            strokeDasharray="5 5" 
+            strokeWidth={2}
+            label={{ 
+              value: `Warning Threshold (${WARNING_THRESHOLD})`, 
+              position: 'insideTopRight',
+              fill: '#ef4444',
+              fontSize: 10,
+              offset: 10
+            }}
+          />
           <Tooltip
             contentStyle={{ 
               backgroundColor: '#0A0A0A', 
@@ -127,14 +151,17 @@ export default function NetworkHealthTimeline() {
               color: '#e5e5e5'
             }}
             labelStyle={{ color: '#737373' }}
-            formatter={(value: number) => [`${value.toFixed(1)}%`, 'Health']}
+            formatter={(value: number) => [
+              `${value.toFixed(1)}%`, 
+              value < WARNING_THRESHOLD ? 'Health (⚠️ Warning)' : 'Health'
+            ]}
           />
           <Area 
             type="monotone" 
             dataKey="health" 
-            stroke="#3b82f6" 
+            stroke={isWarning ? "#ef4444" : "#3b82f6"} 
             strokeWidth={2}
-            fill="url(#healthGradient)" 
+            fill={isWarning ? "url(#warningGradient)" : "url(#healthGradient)"} 
             animationDuration={800}
           />
         </AreaChart>
@@ -142,8 +169,16 @@ export default function NetworkHealthTimeline() {
 
       <div className="flex items-center gap-6 mt-4 pt-4 border-t border-border/50 text-xs font-mono text-muted">
         <div>Avg: <span className="text-white">{stats.avg > 0 ? Math.round(stats.avg) : '--'}</span></div>
-        <div>Min: <span className="text-white">{stats.min > 0 ? Math.round(stats.min) : '--'}</span></div>
+        <div>Min: <span className={stats.min < WARNING_THRESHOLD ? "text-red-500" : "text-white"}>{stats.min > 0 ? Math.round(stats.min) : '--'}</span></div>
         <div>Max: <span className="text-white">{stats.max > 0 ? Math.round(stats.max) : '--'}</span></div>
+        {isWarning && (
+          <div className="flex items-center gap-1.5 text-red-500">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+            </svg>
+            <span>Below threshold</span>
+          </div>
+        )}
         <div className="flex-1 text-right text-muted/50">{chartData.length} data points</div>
       </div>
     </div>
