@@ -36,10 +36,24 @@ class XandeumRPCService {
   private useMock: boolean;
 
   constructor(rpcUrl?: string) {
-    // Use environment variable or default to known public pNode
-    this.rpcUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || 'http://192.190.136.37:6000';
+    // Use proxy in development to avoid CORS, direct URL in production
+    const isDevelopment = import.meta.env.MODE === 'development';
+    const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || 'http://192.190.136.37:6000';
+    
+    // In development, use Vite proxy to avoid CORS issues
+    this.rpcUrl = isDevelopment ? '' : baseUrl; // Empty string uses current origin with /api prefix
     this.cache = new Map();
-    this.useMock = import.meta.env.VITE_USE_MOCK_DATA === 'true' || import.meta.env.MODE === 'development';
+    
+    // Force mock data if public API is unreliable (v0.7.0 has known bugs)
+    const forceUseMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+    this.useMock = forceUseMock;
+    
+    console.log('🔧 XandeumRPC initialized:', {
+      mode: import.meta.env.MODE,
+      rpcUrl: this.rpcUrl || '/api (via proxy)',
+      useMock: this.useMock,
+      note: 'Will auto-fallback to mock data if API fails',
+    });
   }
 
   /**
@@ -47,7 +61,16 @@ class XandeumRPCService {
    */
   private async makeRPCCall(method: string, params: any[] = []): Promise<any> {
     try {
-      const response = await fetch(`${this.rpcUrl}/rpc`, {
+      // Use /api prefix for development proxy, direct URL for production
+      const endpoint = this.rpcUrl ? `${this.rpcUrl}/rpc` : '/api/rpc';
+      
+      console.log(`📡 Calling ${method} at ${endpoint}`);
+      
+      // Add timeout to prevent infinite loading (5 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -58,7 +81,10 @@ class XandeumRPCService {
           params: params,
           id: 1,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -74,8 +100,8 @@ class XandeumRPCService {
     } catch (error) {
       console.error(`RPC call failed for method "${method}":`, error);
       
-      // Fallback to mock data in development or on error
-      if (this.useMock || import.meta.env.MODE === 'development') {
+      // Fallback to mock data if enabled or on error
+      if (this.useMock) {
         console.warn('⚠️ Using mock data as fallback');
         return null;
       }
@@ -99,23 +125,42 @@ class XandeumRPCService {
       }
     }
 
+    // If forced to use mock, skip API call
+    if (this.useMock) {
+      console.warn('⚠️ Using mock data (VITE_USE_MOCK_DATA=true or forced)');
+      const mockNodes = this.getMockNodes();
+      this.setCache(cacheKey, mockNodes);
+      return mockNodes;
+    }
+
     try {
-      console.log('📡 Fetching nodes from pRPC:', this.rpcUrl);
+      console.log('📡 Fetching nodes from pRPC:', this.rpcUrl || '/api (via proxy)');
       
       const result = await this.makeRPCCall('get-pods-with-stats');
       
       if (!result || !result.pods) {
-        throw new Error('Invalid response from pRPC');
+        throw new Error('Invalid response from pRPC - no pods data');
       }
 
       const nodes = this.transformPodsToNodes(result.pods);
+      
+      if (nodes.length === 0) {
+        console.warn('⚠️ API returned 0 nodes, using mock data as fallback');
+        const mockNodes = this.getMockNodes();
+        this.setCache(cacheKey, mockNodes);
+        return mockNodes;
+      }
       
       console.log(`✅ Received ${nodes.length} nodes from gossip network`);
       
       this.setCache(cacheKey, nodes);
       return nodes;
     } catch (error) {
-      console.error('Failed to fetch from real API, using mock data:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('❌ Failed to fetch from API, using mock data:', errorMsg);
+      
+      // Auto-enable mock mode after failure
+      this.useMock = true;
       
       // Fallback to mock data
       const mockNodes = this.getMockNodes();

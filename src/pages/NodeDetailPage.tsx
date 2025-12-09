@@ -119,170 +119,402 @@ export default function NodeDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 p-8">
+    <div className="min-h-screen bg-[#050505] p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
+        {/* Header with Gradient Background */}
+        <div className="mb-8 relative">
+          {/* Gradient decoration */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#22c55e]/10 via-[#3b82f6]/10 to-purple-500/10 rounded-2xl blur-3xl -z-10" />
+          
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+            className="flex items-center gap-2 text-gray-400 hover:text-[#22c55e] transition-all mb-6 group"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium">Back to Dashboard</span>
           </button>
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-white mb-2">Node Details</h1>
-              <p className="text-gray-400">Complete information about this pNode</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <FavoriteButton
-                nodeId={node.id}
-                isFavorite={isFavorite(node.id)}
-                onToggle={toggleFavorite}
-                size="lg"
-                showLabel
-              />
-              <ExportButton
-                format="json"
-                onExport={() => exportNodeDetails(node)}
-                label="Export"
-                size="sm"
-              />
-              <span
-                className={`px-4 py-2 rounded-lg border ${statusColors[node.status]} font-medium text-sm uppercase`}
-              >
-                {node.status}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <Activity className="w-5 h-5 text-purple-400" />
-              <h3 className="text-gray-400 text-sm font-medium">Uptime</h3>
-            </div>
-            <p className="text-2xl font-bold text-white">{node.uptime.toFixed(2)}%</p>
-          </div>
-
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <Server className="w-5 h-5 text-blue-400" />
-              <h3 className="text-gray-400 text-sm font-medium">Version</h3>
-            </div>
-            <p className="text-2xl font-bold text-white">{node.version}</p>
-          </div>
-
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="w-5 h-5 text-green-400" />
-              <h3 className="text-gray-400 text-sm font-medium">Last Seen</h3>
-            </div>
-            <p className="text-xl font-bold text-white">{lastSeenDuration}</p>
-          </div>
-
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center gap-3 mb-2">
-              <Wifi className="w-5 h-5 text-orange-400" />
-              <h3 className="text-gray-400 text-sm font-medium">Latency</h3>
-            </div>
-            <p className="text-2xl font-bold text-white">
-              {node.performance?.latency ? `${node.performance.latency.toFixed(1)}ms` : 'N/A'}
-            </p>
-          </div>
-        </div>
-
-        {/* Node Information */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          {/* Identity Card */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-6">Identity Information</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">Public Key</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-purple-400 text-sm font-mono break-all">
-                    {node.publicKey}
-                  </code>
-                  <button
-                    onClick={() => copyToClipboard(node.publicKey, 'pubkey')}
-                    className="p-2 hover:bg-gray-700 rounded transition-colors"
-                    title="Copy public key"
+          
+          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-2xl border border-[#1F1F1F] p-6 md:p-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#22c55e] to-[#3b82f6] flex items-center justify-center">
+                    <Server className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">
+                      Node Details
+                    </h1>
+                    <p className="text-sm text-gray-400 font-mono">
+                      {node.id.substring(0, 8)}...{node.id.slice(-6)}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span
+                    className={`px-3 py-1.5 rounded-lg border ${statusColors[node.status]} font-semibold text-xs uppercase tracking-wide`}
                   >
-                    <Copy className={`w-4 h-4 ${copiedField === 'pubkey' ? 'text-green-400' : 'text-gray-400'}`} />
+                    ● {node.status}
+                  </span>
+                  <span className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800/50 text-gray-300 font-semibold text-xs">
+                    v{node.version}
+                  </span>
+                  {node.location?.country && (
+                    <span className="px-3 py-1.5 rounded-lg border border-gray-700 bg-gray-800/50 text-gray-300 font-semibold text-xs flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {node.location.country}
+                    </span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <FavoriteButton
+                  nodeId={node.id}
+                  isFavorite={isFavorite(node.id)}
+                  onToggle={toggleFavorite}
+                  size="lg"
+                  showLabel
+                />
+                <ExportButton
+                  format="json"
+                  onExport={() => exportNodeDetails(node)}
+                  label="Export"
+                  size="sm"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Stats - Modern Card Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+          {/* Uptime Card */}
+          <div className="group relative bg-gradient-to-br from-[#0A0A0A] to-[#0A0A0A]/50 rounded-xl p-5 border border-[#1F1F1F] hover:border-[#22c55e]/50 transition-all hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#22c55e]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#22c55e]/10 flex items-center justify-center">
+                  <Activity className="w-5 h-5 text-[#22c55e]" />
+                </div>
+                <div className="text-xs text-gray-500 font-mono">Live</div>
+              </div>
+              <div className="mb-1">
+                <p className="text-3xl font-bold bg-gradient-to-r from-[#22c55e] to-[#16a34a] bg-clip-text text-transparent">
+                  {node.uptime.toFixed(1)}%
+                </p>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Uptime</p>
+            </div>
+          </div>
+
+          {/* Version Card */}
+          <div className="group relative bg-gradient-to-br from-[#0A0A0A] to-[#0A0A0A]/50 rounded-xl p-5 border border-[#1F1F1F] hover:border-[#3b82f6]/50 transition-all hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#3b82f6]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+                  <Server className="w-5 h-5 text-[#3b82f6]" />
+                </div>
+                <div className="text-xs px-2 py-0.5 rounded bg-[#3b82f6]/10 text-[#3b82f6] font-mono">
+                  Latest
+                </div>
+              </div>
+              <div className="mb-1">
+                <p className="text-3xl font-bold bg-gradient-to-r from-[#3b82f6] to-[#2563eb] bg-clip-text text-transparent">
+                  {node.version}
+                </p>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Version</p>
+            </div>
+          </div>
+
+          {/* Last Seen Card */}
+          <div className="group relative bg-gradient-to-br from-[#0A0A0A] to-[#0A0A0A]/50 rounded-xl p-5 border border-[#1F1F1F] hover:border-purple-500/50 transition-all hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-purple-400" />
+                </div>
+                <div className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+              </div>
+              <div className="mb-1">
+                <p className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+                  {lastSeenDuration}
+                </p>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Last Seen</p>
+            </div>
+          </div>
+
+          {/* Latency Card */}
+          <div className="group relative bg-gradient-to-br from-[#0A0A0A] to-[#0A0A0A]/50 rounded-xl p-5 border border-[#1F1F1F] hover:border-orange-500/50 transition-all hover:scale-[1.02]">
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Wifi className="w-5 h-5 text-orange-400" />
+                </div>
+                <div className="text-xs text-gray-500 font-mono">ms</div>
+              </div>
+              <div className="mb-1">
+                <p className="text-3xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                  {node.performance?.latency ? node.performance.latency.toFixed(0) : 'N/A'}
+                </p>
+              </div>
+              <p className="text-sm text-gray-400 font-medium">Latency</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Node Information - Modern 2-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Identity Section */}
+          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-2xl border border-[#1F1F1F] overflow-hidden">
+            {/* Section Header */}
+            <div className="bg-gradient-to-r from-[#22c55e]/10 to-transparent p-6 border-b border-[#1F1F1F]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#22c55e]/10 flex items-center justify-center">
+                  <Server className="w-5 h-5 text-[#22c55e]" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Identity</h2>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-5">
+              {/* Node ID */}
+              <div className="group">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                  Node ID
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F] group-hover:border-[#22c55e]/30 transition-colors">
+                    <code className="text-[#22c55e] text-sm font-mono break-all">
+                      {node.id}
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(node.id, 'id')}
+                    className="p-3 hover:bg-[#22c55e]/10 rounded-lg transition-all border border-[#1F1F1F] hover:border-[#22c55e]/50"
+                    title="Copy Node ID"
+                  >
+                    <Copy className={`w-4 h-4 transition-colors ${copiedField === 'id' ? 'text-[#22c55e]' : 'text-gray-400'}`} />
                   </button>
                 </div>
-                {copiedField === 'pubkey' && (
-                  <span className="text-green-400 text-xs mt-1 inline-block">✓ Copied!</span>
+                {copiedField === 'id' && (
+                  <span className="text-[#22c55e] text-xs mt-1.5 inline-flex items-center gap-1 font-medium">
+                    <span className="w-1 h-1 bg-[#22c55e] rounded-full animate-pulse" />
+                    Copied to clipboard
+                  </span>
                 )}
               </div>
 
-              <div>
-                <label className="text-gray-400 text-sm mb-1 block">IP Address</label>
+              {/* Public Key */}
+              <div className="group">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                  Public Key
+                </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-gray-900 px-3 py-2 rounded text-blue-400 text-sm font-mono">
-                    {node.ipAddress}:{node.port}
-                  </code>
-                  <Tooltip content={copiedField === 'ip' ? 'Copied!' : 'Copy IP address'}>
-                    <button
-                      onClick={() => copyToClipboard(`${node.ipAddress}:${node.port}`, 'ip')}
-                      className="p-2 hover:bg-gray-700 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      aria-label="Copy IP address"
-                    >
-                      <Copy className={`w-4 h-4 ${copiedField === 'ip' ? 'text-green-400' : 'text-gray-400'}`} />
-                    </button>
-                  </Tooltip>
+                  <div className="flex-1 bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F] group-hover:border-purple-500/30 transition-colors">
+                    <code className="text-purple-400 text-sm font-mono break-all">
+                      {node.publicKey}
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(node.publicKey, 'pubkey')}
+                    className="p-3 hover:bg-purple-500/10 rounded-lg transition-all border border-[#1F1F1F] hover:border-purple-500/50"
+                    title="Copy public key"
+                  >
+                    <Copy className={`w-4 h-4 transition-colors ${copiedField === 'pubkey' ? 'text-purple-400' : 'text-gray-400'}`} />
+                  </button>
                 </div>
+                {copiedField === 'pubkey' && (
+                  <span className="text-purple-400 text-xs mt-1.5 inline-flex items-center gap-1 font-medium">
+                    <span className="w-1 h-1 bg-purple-400 rounded-full animate-pulse" />
+                    Copied to clipboard
+                  </span>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              {/* IP Address */}
+              <div className="group">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                  Gossip Address
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F] group-hover:border-[#3b82f6]/30 transition-colors">
+                    <code className="text-[#3b82f6] text-sm font-mono">
+                      {node.ipAddress}:{node.port}
+                    </code>
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(`${node.ipAddress}:${node.port}`, 'ip')}
+                    className="p-3 hover:bg-[#3b82f6]/10 rounded-lg transition-all border border-[#1F1F1F] hover:border-[#3b82f6]/50"
+                    title="Copy IP address"
+                  >
+                    <Copy className={`w-4 h-4 transition-colors ${copiedField === 'ip' ? 'text-[#3b82f6]' : 'text-gray-400'}`} />
+                  </button>
+                </div>
+                {copiedField === 'ip' && (
+                  <span className="text-[#3b82f6] text-xs mt-1.5 inline-flex items-center gap-1 font-medium">
+                    <span className="w-1 h-1 bg-[#3b82f6] rounded-full animate-pulse" />
+                    Copied to clipboard
+                  </span>
+                )}
+              </div>
+
+              {/* RPC Port (if available) */}
+              {node.performance?.rpcPort && (
+                <div className="group">
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                    RPC Endpoint
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F] group-hover:border-orange-500/30 transition-colors">
+                      <code className="text-orange-400 text-sm font-mono">
+                        {node.ipAddress}:{node.performance.rpcPort}
+                      </code>
+                    </div>
+                    <button
+                      onClick={() => copyToClipboard(`${node.ipAddress}:${node.performance?.rpcPort}`, 'rpc')}
+                      className="p-3 hover:bg-orange-500/10 rounded-lg transition-all border border-[#1F1F1F] hover:border-orange-500/50"
+                      title="Copy RPC endpoint"
+                    >
+                      <Copy className={`w-4 h-4 transition-colors ${copiedField === 'rpc' ? 'text-orange-400' : 'text-gray-400'}`} />
+                    </button>
+                  </div>
+                  {copiedField === 'rpc' && (
+                    <span className="text-orange-400 text-xs mt-1.5 inline-flex items-center gap-1 font-medium">
+                      <span className="w-1 h-1 bg-orange-400 rounded-full animate-pulse" />
+                      Copied to clipboard
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Timeline */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#1F1F1F]">
                 <div>
-                  <label className="text-gray-400 text-sm mb-1 block">First Seen</label>
-                  <p className="text-white">{formatDate(node.firstSeen)}</p>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                    First Seen
+                  </label>
+                  <p className="text-white font-medium">{formatDate(node.firstSeen)}</p>
+                  <p className="text-gray-500 text-xs mt-0.5">Initial discovery</p>
                 </div>
                 <div>
-                  <label className="text-gray-400 text-sm mb-1 block">Last Active</label>
-                  <p className="text-white">{formatDate(node.lastSeen)}</p>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2 block">
+                    Last Active
+                  </label>
+                  <p className="text-white font-medium">{formatDate(node.lastSeen)}</p>
+                  <p className="text-gray-500 text-xs mt-0.5">{lastSeenDuration}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Location Card */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
-            <h2 className="text-xl font-bold text-white mb-6">Location</h2>
-            {node.location ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <MapPin className="w-5 h-5 text-red-400" />
-                  <div>
-                    <p className="text-white font-medium">{node.location.city}</p>
-                    <p className="text-gray-400 text-sm">{node.location.country}</p>
+          {/* Network & Software Section */}
+          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-2xl border border-[#1F1F1F] overflow-hidden">
+            {/* Section Header */}
+            <div className="bg-gradient-to-r from-[#3b82f6]/10 to-transparent p-6 border-b border-[#1F1F1F]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center">
+                  <Wifi className="w-5 h-5 text-[#3b82f6]" />
+                </div>
+                <h2 className="text-xl font-bold text-white">Network & Software</h2>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Location Info */}
+              {node.location && (
+                <div className="bg-gradient-to-r from-[#3b82f6]/5 to-transparent rounded-xl p-4 border border-[#1F1F1F]">
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-lg bg-[#3b82f6]/10 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="w-6 h-6 text-[#3b82f6]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="text-white font-bold text-lg">{node.location.city}</h3>
+                        <span className="px-2 py-0.5 rounded bg-[#3b82f6]/10 text-[#3b82f6] text-xs font-mono">
+                          {node.location.country}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-3">
+                        <div>
+                          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Latitude</p>
+                          <p className="text-white font-mono text-sm">{node.location.latitude.toFixed(4)}°</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Longitude</p>
+                          <p className="text-white font-mono text-sm">{node.location.longitude.toFixed(4)}°</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-[#1F1F1F]">
+                        <p className="text-gray-500 text-xs mb-1">Coordinates</p>
+                        <code className="text-[#3b82f6] text-xs font-mono">
+                          {node.location.latitude.toFixed(6)}, {node.location.longitude.toFixed(6)}
+                        </code>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-gray-400 text-sm mb-1 block">Latitude</label>
-                    <p className="text-white">{node.location.latitude.toFixed(4)}</p>
+              )}
+
+              {/* Software Version */}
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3 block">
+                  Software Information
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Version</span>
+                      <span className="text-white font-mono font-semibold">{node.version}</span>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-gray-400 text-sm mb-1 block">Longitude</label>
-                    <p className="text-white">{node.location.longitude.toFixed(4)}</p>
-                  </div>
-                </div>
-                <div className="mt-4 bg-gray-900 rounded-lg p-4">
-                  <p className="text-gray-400 text-sm mb-2">Geographic Coordinates</p>
-                  <code className="text-purple-400 text-xs font-mono">
-                    {node.location.latitude.toFixed(6)}, {node.location.longitude.toFixed(6)}
-                  </code>
+                  
+                  {node.performance?.shredVersion && (
+                    <div className="bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400 text-sm">Shred Version</span>
+                        <span className="text-white font-mono font-semibold">{node.performance.shredVersion}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {node.performance?.featureSet && (
+                    <div className="bg-[#050505] rounded-lg px-4 py-3 border border-[#1F1F1F]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-400 text-sm">Feature Set</span>
+                        <span className="text-white font-mono text-xs">{node.performance.featureSet}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            ) : (
-              <p className="text-gray-400">Location information not available</p>
-            )}
+
+              {/* Network Stats */}
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3 block">
+                  Network Statistics
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-gradient-to-br from-[#22c55e]/5 to-transparent rounded-lg px-4 py-3 border border-[#1F1F1F]">
+                    <p className="text-gray-400 text-xs mb-1">Uptime</p>
+                    <p className="text-[#22c55e] font-bold text-lg">{node.uptime.toFixed(1)}%</p>
+                  </div>
+                  <div className="bg-gradient-to-br from-orange-500/5 to-transparent rounded-lg px-4 py-3 border border-[#1F1F1F]">
+                    <p className="text-gray-400 text-xs mb-1">Latency</p>
+                    <p className="text-orange-400 font-bold text-lg">
+                      {node.performance?.latency ? `${node.performance.latency.toFixed(0)}ms` : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
