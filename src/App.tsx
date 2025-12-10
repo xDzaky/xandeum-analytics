@@ -1,3 +1,10 @@
+/**
+ * Xandeum pNode Analytics Platform
+ * 
+ * Copyright © 2024-2025 Xandeum pNode Analytics Platform. All Rights Reserved.
+ * PROPRIETARY SOFTWARE - Unauthorized use is strictly prohibited.
+ */
+
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Layout from './components/layout/Layout';

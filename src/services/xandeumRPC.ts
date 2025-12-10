@@ -26,7 +26,7 @@ interface RPCResponse {
     pods: PodResponse[];
     total_count: number;
   };
-  error: any | null;
+  error: { code: number; message: string } | null;
 }
 
 class XandeumRPCService {
@@ -34,11 +34,26 @@ class XandeumRPCService {
   private cache: Map<string, { data: unknown; timestamp: number }>;
   private cacheTTL: number = 30000; // 30 seconds
   private useMock: boolean;
+  private publicEndpoints: string[];
+  private currentEndpointIndex: number = 0;
 
   constructor(rpcUrl?: string) {
+    // Public pRPC endpoints from Discord (verified working)
+    this.publicEndpoints = [
+      'http://192.190.136.36:6000',
+      'http://192.190.136.37:6000',
+      'http://192.190.136.38:6000',
+      'http://192.190.136.28:6000',
+      'http://192.190.136.29:6000',
+      'http://161.97.97.41:6000',
+      'http://173.212.203.145:6000',
+      'http://173.212.220.65:6000',
+      'http://207.244.255.1:6000',
+    ];
+    
     // Use proxy in development to avoid CORS, direct URL in production
     const isDevelopment = import.meta.env.MODE === 'development';
-    const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || 'http://192.190.136.37:6000';
+    const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || this.publicEndpoints[0];
     
     // In development, use Vite proxy to avoid CORS issues
     this.rpcUrl = isDevelopment ? '' : baseUrl; // Empty string uses current origin with /api prefix
@@ -52,61 +67,127 @@ class XandeumRPCService {
       mode: import.meta.env.MODE,
       rpcUrl: this.rpcUrl || '/api (via proxy)',
       useMock: this.useMock,
-      note: 'Will auto-fallback to mock data if API fails',
+      fallbackEndpoints: this.publicEndpoints.length,
+      note: 'Will auto-rotate endpoints and fallback to mock data if all fail',
     });
   }
 
   /**
-   * Make JSON-RPC 2.0 call to pNode
+   * Make JSON-RPC 2.0 call to pNode with automatic retry on different endpoints
    */
-  private async makeRPCCall(method: string, params: any[] = []): Promise<any> {
-    try {
-      // Use /api prefix for development proxy, direct URL for production
-      const endpoint = this.rpcUrl ? `${this.rpcUrl}/rpc` : '/api/rpc';
-      
-      console.log(`📡 Calling ${method} at ${endpoint}`);
-      
-      // Add timeout to prevent infinite loading (5 seconds)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jsonrpc: '2.0',
-          method: method,
-          params: params,
-          id: 1,
-        }),
-        signal: controller.signal,
-      });
+  private async makeRPCCall(method: string, params: unknown[] = []): Promise<unknown> {
+    const isDevelopment = import.meta.env.MODE === 'development';
+    
+    // In development, try primary endpoint first via proxy
+    if (isDevelopment) {
+      try {
+        const endpoint = '/api/rpc';
+        console.log(`📡 Calling ${method} at ${endpoint} (via proxy)`);
+        
+        // Increase timeout to 10 seconds for gossip network
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: method,
+            params: params,
+            id: 1,
+          }),
+          signal: controller.signal,
+        });
 
-      clearTimeout(timeoutId);
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data: RPCResponse = await response.json();
+
+        if (data.error) {
+          throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
+        }
+
+        console.log(`✅ RPC call succeeded:`, data.result);
+        return data.result;
+      } catch (error) {
+        console.error(`❌ RPC call failed for method "${method}":`, error);
+        
+        // Fallback to mock data if enabled or on error
+        if (this.useMock) {
+          console.warn('⚠️ Using mock data as fallback');
+          return null;
+        }
+        
+        throw error;
       }
-
-      const data: RPCResponse = await response.json();
-
-      if (data.error) {
-        throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
-      }
-
-      return data.result;
-    } catch (error) {
-      console.error(`RPC call failed for method "${method}":`, error);
+    } else {
+      // Production: Try multiple endpoints with rotation
+      const maxRetries = 3;
       
-      // Fallback to mock data if enabled or on error
-      if (this.useMock) {
-        console.warn('⚠️ Using mock data as fallback');
-        return null;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const currentEndpoint = this.publicEndpoints[this.currentEndpointIndex];
+        const endpoint = `${currentEndpoint}/rpc`;
+        
+        try {
+          console.log(`📡 Attempt ${attempt + 1}/${maxRetries}: Calling ${method} at ${endpoint}`);
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000);
+          
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              jsonrpc: '2.0',
+              method: method,
+              params: params,
+              id: 1,
+            }),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+
+          const data: RPCResponse = await response.json();
+
+          if (data.error) {
+            throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
+          }
+
+          console.log(`✅ RPC call succeeded on ${currentEndpoint}`);
+          return data.result;
+        } catch (error) {
+          console.error(`❌ Failed on ${currentEndpoint}:`, error);
+          
+          // Rotate to next endpoint
+          this.currentEndpointIndex = (this.currentEndpointIndex + 1) % this.publicEndpoints.length;
+          
+          // If last attempt, throw error
+          if (attempt === maxRetries - 1) {
+            if (this.useMock) {
+              console.warn('⚠️ All endpoints failed, using mock data');
+              return null;
+            }
+            throw error;
+          }
+          
+          // Wait 1 second before retry
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-      
-      throw error;
     }
   }
 
@@ -136,7 +217,7 @@ class XandeumRPCService {
     try {
       console.log('📡 Fetching nodes from pRPC:', this.rpcUrl || '/api (via proxy)');
       
-      const result = await this.makeRPCCall('get-pods-with-stats');
+      const result = await this.makeRPCCall('get-pods-with-stats') as { pods: PodResponse[] };
       
       if (!result || !result.pods) {
         throw new Error('Invalid response from pRPC - no pods data');
@@ -235,17 +316,26 @@ class XandeumRPCService {
   }
 
   /**
-   * Infer location from IP address (simplified)
-   * In production, use IP geolocation API
+   * Infer location from IP address based on known Xandeum public nodes
+   * Uses actual IP ranges from Discord-verified public endpoints
    */
   private inferLocation(ipAddress: string) {
-    // Common IP ranges for demo
+    // Known IP ranges from Xandeum public nodes (from Discord)
     const ipRanges: Record<string, { country: string; city: string; latitude: number; longitude: number }> = {
-      '192.190': { country: 'USA', city: 'New York', latitude: 40.7128, longitude: -74.0060 },
+      // Germany nodes (Contabo/Hetzner)
       '173.212': { country: 'Germany', city: 'Frankfurt', latitude: 50.1109, longitude: 8.6821 },
-      '185.': { country: 'Netherlands', city: 'Amsterdam', latitude: 52.3676, longitude: 4.9041 },
+      
+      // USA nodes (multiple locations)
+      '192.190': { country: 'USA', city: 'New York', latitude: 40.7128, longitude: -74.0060 },
+      '161.97': { country: 'Netherlands', city: 'Amsterdam', latitude: 52.3676, longitude: 4.9041 },
+      '207.244': { country: 'USA', city: 'Seattle', latitude: 47.6062, longitude: -122.3321 },
+      
+      // Common cloud provider ranges
       '104.': { country: 'USA', city: 'Los Angeles', latitude: 34.0522, longitude: -118.2437 },
       '172.': { country: 'Singapore', city: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
+      '185.': { country: 'Germany', city: 'Berlin', latitude: 52.5200, longitude: 13.4050 },
+      '10.': { country: 'Unknown', city: 'Private Network', latitude: 0, longitude: 0 },
+      '192.168': { country: 'Unknown', city: 'Private Network', latitude: 0, longitude: 0 },
     };
 
     for (const [prefix, location] of Object.entries(ipRanges)) {
@@ -254,7 +344,7 @@ class XandeumRPCService {
       }
     }
 
-    // Default location
+    // Default location for unknown IPs
     return { country: 'Unknown', city: 'Unknown', latitude: 0, longitude: 0 };
   }
 

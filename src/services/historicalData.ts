@@ -1,6 +1,7 @@
 /**
  * Historical Data Service
  * Stores network health snapshots for time-series visualization
+ * Now tracks real data from API polling
  */
 
 export interface HealthSnapshot {
@@ -11,10 +12,19 @@ export interface HealthSnapshot {
   averageUptime: number;
 }
 
+export interface NetworkSnapshot {
+  timestamp: number;
+  totalNodes: number;
+  activeNodes: number;
+  inactiveNodes: number;
+}
+
 class HistoricalDataService {
   private snapshots: HealthSnapshot[] = [];
-  private maxSnapshots = 1000; // Keep last 1000 snapshots (~ 8 hours at 30s intervals)
+  private networkSnapshots: NetworkSnapshot[] = [];
+  private maxSnapshots = 288; // Keep 24 hours at 5-minute intervals
   private storageKey = 'xandeum_health_history';
+  private networkStorageKey = 'xandeum_network_timeline';
 
   constructor() {
     this.loadFromStorage();
@@ -43,6 +53,27 @@ class HistoricalDataService {
   }
 
   /**
+   * Add a network timeline snapshot (for Network Timeline chart)
+   */
+  addNetworkSnapshot(totalNodes: number, activeNodes: number, inactiveNodes: number): void {
+    const snapshot: NetworkSnapshot = {
+      timestamp: Date.now(),
+      totalNodes,
+      activeNodes,
+      inactiveNodes,
+    };
+
+    this.networkSnapshots.push(snapshot);
+
+    // Keep only the last N snapshots
+    if (this.networkSnapshots.length > this.maxSnapshots) {
+      this.networkSnapshots = this.networkSnapshots.slice(-this.maxSnapshots);
+    }
+
+    this.saveNetworkToStorage();
+  }
+
+  /**
    * Get snapshots for a specific time period
    */
   getSnapshots(periodHours: number): HealthSnapshot[] {
@@ -58,6 +89,26 @@ class HistoricalDataService {
 
     // Otherwise generate mock data for the period
     return this.generateMockData(periodHours);
+  }
+
+  /**
+   * Get network timeline snapshots for the last N hours
+   */
+  getNetworkTimeline(hours: number = 24): NetworkSnapshot[] {
+    const now = Date.now();
+    const cutoffTime = now - (hours * 60 * 60 * 1000);
+
+    const filtered = this.networkSnapshots.filter(s => s.timestamp >= cutoffTime);
+
+    // If we have real data, use it
+    if (filtered.length >= 10) {
+      // Downsample to max 48 points for performance
+      const step = Math.max(1, Math.floor(filtered.length / 48));
+      return filtered.filter((_, i) => i % step === 0);
+    }
+
+    // Otherwise return empty array - let Analytics.tsx handle mock data
+    return [];
   }
 
   /**
@@ -111,6 +162,17 @@ class HistoricalDataService {
   }
 
   /**
+   * Save network timeline to localStorage
+   */
+  private saveNetworkToStorage(): void {
+    try {
+      localStorage.setItem(this.networkStorageKey, JSON.stringify(this.networkSnapshots));
+    } catch (error) {
+      console.warn('Failed to save network timeline to storage:', error);
+    }
+  }
+
+  /**
    * Load from localStorage
    */
   private loadFromStorage(): void {
@@ -123,9 +185,20 @@ class HistoricalDataService {
           return s.timestamp > Date.now() - (24 * 60 * 60 * 1000);
         });
       }
+
+      // Load network timeline
+      const networkStored = localStorage.getItem(this.networkStorageKey);
+      if (networkStored) {
+        const parsed = JSON.parse(networkStored);
+        this.networkSnapshots = parsed.filter((s: NetworkSnapshot) => {
+          // Keep only snapshots from last 24 hours
+          return s.timestamp > Date.now() - (24 * 60 * 60 * 1000);
+        });
+      }
     } catch (error) {
       console.warn('Failed to load history from storage:', error);
       this.snapshots = [];
+      this.networkSnapshots = [];
     }
   }
 

@@ -1,21 +1,61 @@
-MIT License
+PROPRIETARY LICENSE
 
-Copyright (c) 2024 Xandeum pNode Analytics Platform
+Copyright (c) 2024-2025 Xandeum pNode Analytics Platform
+All Rights Reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+IMPORTANT NOTICE: This software and associated documentation files (the "Software") 
+are proprietary and confidential. Unauthorized copying, modification, distribution, 
+or use of this Software is strictly prohibited.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+TERMS AND CONDITIONS:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. OWNERSHIP
+   This Software is the exclusive property of the copyright holder. All rights, 
+   title, and interest in and to the Software remain with the copyright holder.
+
+2. RESTRICTIONS
+   You are NOT permitted to:
+   - Copy, reproduce, or duplicate the Software or any portion thereof
+   - Modify, adapt, translate, or create derivative works based on the Software
+   - Distribute, sublicense, sell, rent, lease, or transfer the Software
+   - Reverse engineer, decompile, or disassemble the Software
+   - Remove or alter any proprietary notices or labels on the Software
+   - Use the Software to create competing products or services
+   - Use the Software for commercial purposes without explicit written permission
+   - Fork, clone, or create similar projects based on this codebase
+
+3. PERMITTED USE
+   This Software is provided for:
+   - Viewing and evaluation purposes only
+   - Reference for the Xandeum Lattice community
+   - Educational purposes (with attribution)
+   
+   Any other use requires explicit written permission from the copyright holder.
+
+4. ATTRIBUTION
+   If you reference or discuss this Software, you must:
+   - Clearly credit the original author and project
+   - Include a link to the official repository
+   - NOT imply endorsement or affiliation without permission
+
+5. NO WARRANTY
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+   IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+6. ENFORCEMENT
+   Violation of this license will result in:
+   - Immediate termination of any granted permissions
+   - Legal action to protect intellectual property rights
+   - Claims for damages and injunctive relief
+
+7. CONTACT
+   For licensing inquiries, permissions, or questions:
+   Repository: https://github.com/xDzaky/xandeum-analytics
+   
+   Unauthorized use will be prosecuted to the fullest extent of the law.
+
+Last Updated: December 10, 2025

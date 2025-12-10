@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xandeum pRPC API Test</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0a0a;
+      color: #00ff00;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    h1 { color: #00ff88; border-bottom: 2px solid #00ff88; padding-bottom: 10px; }
+    h2 { color: #ffaa00; margin-top: 30px; }
+    .test-section {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    button {
+      background: #00ff88;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover { background: #00cc66; }
+    button:disabled { background: #666; cursor: not-allowed; }
+    .result {
+      background: #0d0d0d;
+      border-left: 3px solid #00ff88;
+      padding: 15px;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .error { border-left-color: #ff0000; color: #ff6666; }
+    .success { border-left-color: #00ff88; color: #00ff88; }
+    .warning { border-left-color: #ffaa00; color: #ffaa00; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      border: 1px solid #00ff88;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #00ff88;
+      margin: 10px 0;
+    }
+    .stat-label {
+      color: #999;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid #00ff88;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+    th {
+      background: #1a1a1a;
+      color: #00ff88;
+      font-weight: bold;
+    }
+    tr:hover { background: #1a1a1a; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Xandeum pRPC API Test Suite</h1>
+  <p>Test public pRPC endpoints and verify data integrity</p>
+
+  <!-- Endpoint Selection -->
+  <div class="test-section">
+    <h2>📡 Select Endpoint</h2>
+    <select id="endpointSelect" style="width: 100%; padding: 10px; background: #1a1a1a; color: #00ff00; border: 1px solid #333; border-radius: 4px;">
+      <option value="http://192.190.136.36:6000">192.190.136.36:6000 (Primary)</option>
+      <option value="http://192.190.136.37:6000">192.190.136.37:6000</option>
+      <option value="http://192.190.136.38:6000">192.190.136.38:6000</option>
+      <option value="http://192.190.136.28:6000">192.190.136.28:6000</option>
+      <option value="http://192.190.136.29:6000">192.190.136.29:6000</option>
+      <option value="http://161.97.97.41:6000">161.97.97.41:6000</option>
+      <option value="http://173.212.203.145:6000">173.212.203.145:6000</option>
+      <option value="http://173.212.220.65:6000">173.212.220.65:6000</option>
+      <option value="http://207.244.255.1:6000">207.244.255.1:6000</option>
+    </select>
+  </div>
+
+  <!-- Quick Tests -->
+  <div class="test-section">
+    <h2>⚡ Quick Tests</h2>
+    <button onclick="testGetStats()">Test get-stats</button>
+    <button onclick="testGetPods()">Test get-pods (Legacy)</button>
+    <button onclick="testGetPodsWithStats()">Test get-pods-with-stats (v0.7.0)</button>
+    <button onclick="testAllEndpoints()">Test All Endpoints</button>
+    <div id="quickTestResult" class="result" style="display: none;"></div>
+  </div>
+
+  <!-- Statistics -->
+  <div class="test-section">
+    <h2>📊 Network Statistics</h2>
+    <button onclick="fetchNetworkStats()">Fetch Network Stats</button>
+    <div id="statsContainer" style="display: none;">
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Total Nodes</div>
+          <div class="stat-value" id="statTotalNodes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Public Nodes</div>
+          <div class="stat-value" id="statPublicNodes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Version 0.7.0</div>
+          <div class="stat-value" id="statV07Nodes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Version 0.6.0</div>
+          <div class="stat-value" id="statV06Nodes">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Avg Uptime</div>
+          <div class="stat-value" id="statAvgUptime">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Total Storage</div>
+          <div class="stat-value" id="statTotalStorage">-</div>
+        </div>
+      </div>
+      <div id="nodeTable"></div>
+    </div>
+  </div>
+
+  <!-- Response Time Test -->
+  <div class="test-section">
+    <h2>⏱️ Response Time Test</h2>
+    <button onclick="performanceTest()">Run Performance Test (10 requests)</button>
+    <div id="perfResult" class="result" style="display: none;"></div>
+  </div>
+
+  <script>
+    function getSelectedEndpoint() {
+      return document.getElementById('endpointSelect').value;
+    }
+
+    async function makeRPCCall(method, params = []) {
+      const endpoint = getSelectedEndpoint();
+      const startTime = performance.now();
+
+      try {
+        const response = await fetch(`${endpoint}/rpc`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: method,
+            params: params,
+            id: 1
+          })
+        });
+
+        const endTime = performance.now();
+        const responseTime = (endTime - startTime).toFixed(2);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
+        }
+
+        return { success: true, data: data.result, responseTime };
+      } catch (error) {
+        const endTime = performance.now();
+        const responseTime = (endTime - startTime).toFixed(2);
+        return { success: false, error: error.message, responseTime };
+      }
+    }
+
+    function showResult(elementId, content, type = 'success') {
+      const el = document.getElementById(elementId);
+      el.className = `result ${type}`;
+      el.textContent = content;
+      el.style.display = 'block';
+    }
+
+    async function testGetStats() {
+      showResult('quickTestResult', '🔄 Testing get-stats...', 'warning');
+      const result = await makeRPCCall('get-stats');
+      
+      if (result.success) {
+        const output = `✅ SUCCESS (${result.responseTime}ms)\n\n${JSON.stringify(result.data, null, 2)}`;
+        showResult('quickTestResult', output, 'success');
+      } else {
+        showResult('quickTestResult', `❌ FAILED (${result.responseTime}ms)\n\n${result.error}`, 'error');
+      }
+    }
+
+    async function testGetPods() {
+      showResult('quickTestResult', '🔄 Testing get-pods (legacy)...', 'warning');
+      const result = await makeRPCCall('get-pods');
+      
+      if (result.success) {
+        const output = `✅ SUCCESS (${result.responseTime}ms)\nTotal Pods: ${result.data.total_count}\n\n${JSON.stringify(result.data.pods.slice(0, 3), null, 2)}\n...(showing first 3 of ${result.data.total_count})`;
+        showResult('quickTestResult', output, 'success');
+      } else {
+        showResult('quickTestResult', `❌ FAILED (${result.responseTime}ms)\n\n${result.error}`, 'error');
+      }
+    }
+
+    async function testGetPodsWithStats() {
+      showResult('quickTestResult', '🔄 Testing get-pods-with-stats (v0.7.0)...', 'warning');
+      const result = await makeRPCCall('get-pods-with-stats');
+      
+      if (result.success) {
+        const output = `✅ SUCCESS (${result.responseTime}ms)\nTotal Pods: ${result.data.total_count}\n\nSample Pod:\n${JSON.stringify(result.data.pods[0], null, 2)}`;
+        showResult('quickTestResult', output, 'success');
+      } else {
+        showResult('quickTestResult', `❌ FAILED (${result.responseTime}ms)\n\n${result.error}`, 'error');
+      }
+    }
+
+    async function testAllEndpoints() {
+      const endpoints = Array.from(document.getElementById('endpointSelect').options).map(opt => opt.value);
+      let output = '🔄 Testing all endpoints...\n\n';
+      showResult('quickTestResult', output, 'warning');
+
+      for (const endpoint of endpoints) {
+        document.getElementById('endpointSelect').value = endpoint;
+        const result = await makeRPCCall('get-stats');
+        
+        const status = result.success ? '✅' : '❌';
+        const ip = endpoint.replace('http://', '').replace(':6000', '');
+        output += `${status} ${ip.padEnd(20)} | ${result.responseTime}ms${result.success ? '' : ' | ' + result.error}\n`;
+        showResult('quickTestResult', output, 'warning');
+      }
+
+      showResult('quickTestResult', output, 'success');
+    }
+
+    async function fetchNetworkStats() {
+      showResult('quickTestResult', '🔄 Fetching network statistics...', 'warning');
+      const result = await makeRPCCall('get-pods-with-stats');
+      
+      if (!result.success) {
+        showResult('quickTestResult', `❌ FAILED\n\n${result.error}`, 'error');
+        return;
+      }
+
+      const pods = result.data.pods;
+      const totalNodes = pods.length;
+      const publicNodes = pods.filter(p => p.is_public).length;
+      const v07Nodes = pods.filter(p => p.version && p.version.startsWith('0.7')).length;
+      const v06Nodes = pods.filter(p => p.version && p.version.startsWith('0.6')).length;
+      const avgUptime = pods.filter(p => p.uptime).reduce((sum, p) => sum + p.uptime, 0) / pods.filter(p => p.uptime).length;
+      const totalStorage = pods.filter(p => p.storage_committed).reduce((sum, p) => sum + p.storage_committed, 0);
+
+      document.getElementById('statTotalNodes').textContent = totalNodes;
+      document.getElementById('statPublicNodes').textContent = publicNodes;
+      document.getElementById('statV07Nodes').textContent = v07Nodes;
+      document.getElementById('statV06Nodes').textContent = v06Nodes;
+      document.getElementById('statAvgUptime').textContent = (avgUptime / 3600).toFixed(1) + 'h';
+      document.getElementById('statTotalStorage').textContent = (totalStorage / 1e12).toFixed(2) + 'TB';
+
+      // Create table
+      let tableHTML = '<table><thead><tr><th>Address</th><th>Version</th><th>Uptime</th><th>Storage</th><th>Public</th></tr></thead><tbody>';
+      pods.slice(0, 20).forEach(pod => {
+        tableHTML += `<tr>
+          <td>${pod.address || 'N/A'}</td>
+          <td>${pod.version || 'unknown'}</td>
+          <td>${pod.uptime ? (pod.uptime / 3600).toFixed(1) + 'h' : 'N/A'}</td>
+          <td>${pod.storage_committed ? (pod.storage_committed / 1e9).toFixed(1) + 'GB' : 'N/A'}</td>
+          <td>${pod.is_public ? '✅' : '❌'}</td>
+        </tr>`;
+      });
+      tableHTML += '</tbody></table>';
+      if (pods.length > 20) {
+        tableHTML += `<p style="text-align: center; color: #999;">Showing 20 of ${pods.length} nodes</p>`;
+      }
+
+      document.getElementById('nodeTable').innerHTML = tableHTML;
+      document.getElementById('statsContainer').style.display = 'block';
+      showResult('quickTestResult', `✅ Successfully fetched ${totalNodes} nodes in ${result.responseTime}ms`, 'success');
+    }
+
+    async function performanceTest() {
+      const iterations = 10;
+      let output = `⏱️ Running ${iterations} requests to test performance...\n\n`;
+      showResult('perfResult', output, 'warning');
+
+      const times = [];
+      for (let i = 1; i <= iterations; i++) {
+        const result = await makeRPCCall('get-stats');
+        times.push(parseFloat(result.responseTime));
+        
+        const status = result.success ? '✅' : '❌';
+        output += `${status} Request ${i}/${iterations}: ${result.responseTime}ms\n`;
+        showResult('perfResult', output, 'warning');
+      }
+
+      const avg = (times.reduce((a, b) => a + b, 0) / times.length).toFixed(2);
+      const min = Math.min(...times).toFixed(2);
+      const max = Math.max(...times).toFixed(2);
+
+      output += `\n📊 Results:\n`;
+      output += `   Average: ${avg}ms\n`;
+      output += `   Min: ${min}ms\n`;
+      output += `   Max: ${max}ms\n`;
+      output += `\n${avg < 1000 ? '✅ Performance is GOOD' : '⚠️ Performance is SLOW'}`;
+
+      showResult('perfResult', output, avg < 1000 ? 'success' : 'warning');
+    }
+
+    // Auto-test on load
+    window.onload = () => {
+      console.log('🧪 Xandeum pRPC Test Suite Ready');
+      console.log('Select an endpoint and run tests');
+    };
+  </script>
+</body>
+</html>

@@ -59,30 +59,54 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Documentation - Internal notes (exclude from GitHub)
-API-TEST-REPORT.md
-API-FINAL-TEST.md
-CEK-API-HASIL.md
-FIX-LOADING-ISSUE.md
-NODE-DETAIL-DESIGN.md
-PERTANYAAN-API-PUBLIC.md
-QUICK-DEPLOY.md
-JAWABAN-SINGKAT.md
-REQUIREMENT-ANALYSIS.md
-FINAL-ASSESSMENT.md
-SUBMISSION-READINESS.md
-API-INTEGRATION.md
-API-OFFICIAL-DOCS.md
-API-UPDATE-GUIDE.md
-CORS-FIX.md
-TROUBLESHOOTING.md
-PUBLIC-IP-STATUS.md
-IP-PUBLIC-SUMMARY.md
-FINAL-REPORT.md
-DOCUMENTATION-INDEX.md
-QUICK-REFERENCE.md
+# Documentation - Internal development notes (excluded from repository)
+# Only essential documentation will be included in the repository
+*.md
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!COPYRIGHT.md
+!NOTICE.md
+!SECURITY.md
 
-# Keep these documentation files (important for users)
-# README.md
-# FEATURES.md
-# DEPLOYMENT.md
+# Explicitly exclude all internal documentation
+*-REPORT.md
+*-TEST*.md
+*-IMPLEMENTATION*.md
+*-ASSESSMENT.md
+*-READINESS.md
+*-INTEGRATION.md
+*-UPDATE*.md
+*-FIX*.md
+*-STATUS.md
+*-SUMMARY.md
+*-SPEC*.md
+*-DESIGN*.md
+*-GUIDE*.md
+*-INDEX.md
+*-REFERENCE.md
+*-COMPLETE*.md
+*-FEATURES*.md
+API*.md
+CEK*.md
+PERTANYAAN*.md
+JAWABAN*.md
+QUICK*.md
+TROUBLESHOOTING.md
+PUBLIC*.md
+FINAL*.md
+DOCUMENTATION*.md
+REQUIREMENT*.md
+SUBMISSION*.md
+WINNING*.md
+MOBILE*.md
+POLISH*.md
+PRPC*.md
+CORS*.md
+GITHUB*.md
+PROJECT*.md
+tech-*.md
+design-*.md
+inform.md
+err.md
+chat-*.md

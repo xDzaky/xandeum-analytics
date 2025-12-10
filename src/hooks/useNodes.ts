@@ -5,11 +5,26 @@ import type { PNode, NetworkStats } from '../types';
 
 /**
  * Hook to fetch all pNodes
+ * Also saves network timeline snapshot for historical tracking
  */
 export function useNodes() {
   return useQuery<PNode[], Error>({
     queryKey: ['nodes'],
-    queryFn: () => xandeumAPI.getAllNodes(false),
+    queryFn: async () => {
+      const nodes = await xandeumAPI.getAllNodes(false);
+      
+      // Save network timeline snapshot
+      const activeNodes = nodes.filter(n => n.status === 'active').length;
+      const inactiveNodes = nodes.filter(n => n.status === 'inactive').length;
+      
+      historicalDataService.addNetworkSnapshot(
+        nodes.length,
+        activeNodes,
+        inactiveNodes
+      );
+      
+      return nodes;
+    },
     staleTime: 30000, // 30 seconds
     refetchInterval: 30000, // Auto-refetch every 30 seconds
   });

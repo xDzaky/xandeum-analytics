@@ -2,16 +2,21 @@
   "name": "xandeum-analytics",
   "private": true,
   "version": "1.0.0",
-  "description": "Real-time analytics platform for Xandeum pNodes",
-  "author": "Your Name",
-  "license": "MIT",
+  "description": "Real-time analytics platform for Xandeum pNodes - PROPRIETARY SOFTWARE",
+  "author": "Xandeum pNode Analytics Platform",
+  "license": "UNLICENSED",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xDzaky/xandeum-analytics"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "postinstall": "echo '\n⚠️  WARNING: This is PROPRIETARY software. All rights reserved.\n    See LICENSE file for usage restrictions.\n    Unauthorized use is prohibited.\n'"
   },
   "keywords": [
     "xandeum",

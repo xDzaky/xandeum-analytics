@@ -5,16 +5,36 @@ import NetworkTimelineChart from '../components/charts/NetworkTimelineChart';
 import VersionDistributionChart from '../components/charts/VersionDistributionChart';
 import UptimeComparisonChart from '../components/charts/UptimeComparisonChart';
 import LocationDistributionChart from '../components/charts/LocationDistributionChart';
+import NodeStatusChart from '../components/charts/NodeStatusChart';
 import { useMemo } from 'react';
 import { generateNetworkStats } from '../utils/calculations';
+import { historicalDataService } from '../services/historicalData';
 
 export default function Analytics() {
   const { data: nodes, isLoading } = useNodes();
 
-  // Generate timeline data (simulated hourly data)
+  // Get real timeline data from historical tracking
   const timelineData = useMemo(() => {
     if (!nodes) return [];
     
+    // Get historical data from storage
+    const historicalSnapshots = historicalDataService.getNetworkTimeline(24);
+    
+    // If we have sufficient historical data, use it
+    if (historicalSnapshots.length >= 10) {
+      return historicalSnapshots.map(snapshot => {
+        const date = new Date(snapshot.timestamp);
+        return {
+          time: `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`,
+          totalNodes: snapshot.totalNodes,
+          activeNodes: snapshot.activeNodes,
+          inactiveNodes: snapshot.inactiveNodes,
+        };
+      });
+    }
+    
+    // Fallback: generate simulated data for the first 24 hours
+    // This will be replaced by real data as the app runs
     const hours = 24;
     const baseActive = nodes.filter(n => n.status === 'active').length;
     const baseInactive = nodes.filter(n => n.status === 'inactive').length;
@@ -48,20 +68,22 @@ export default function Analytics() {
       .slice(0, 5);
   }, [nodes]);
 
-  // Generate uptime comparison data
+  // Generate uptime comparison data (based on real uptime from API)
   const uptimeData = useMemo(() => {
     if (!nodes) return [];
     
+    // API provides real uptime data, use it
     return nodes
+      .filter(node => node.uptime > 0) // Only nodes with uptime data
       .sort((a, b) => b.uptime - a.uptime)
       .slice(0, 10)
       .map(node => ({
-        name: node.id,
+        name: node.id.slice(0, 8), // Shorten ID for display
         uptime: node.uptime,
       }));
   }, [nodes]);
 
-  // Generate location distribution data
+  // Generate location distribution data (from IP inference in API service)
   const locationData = useMemo(() => {
     if (!nodes) return [];
     
@@ -75,6 +97,20 @@ export default function Analytics() {
       .map(([country, count]) => ({ country, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
+  }, [nodes]);
+
+  // Generate node status distribution data (NEW - from API)
+  const statusData = useMemo(() => {
+    if (!nodes) return [];
+    
+    const statusCounts = nodes.reduce((acc, node) => {
+      acc[node.status] = (acc[node.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(statusCounts)
+      .map(([status, count]) => ({ status, count }))
+      .sort((a, b) => b.count - a.count);
   }, [nodes]);
 
   if (isLoading) {
@@ -158,9 +194,10 @@ export default function Analytics() {
       {/* Timeline Chart - Full Width */}
       <NetworkTimelineChart data={timelineData} />
 
-      {/* Two Column Layout for Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Three Column Layout for Distribution Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <VersionDistributionChart data={versionData} />
+        <NodeStatusChart data={statusData} />
         <LocationDistributionChart data={locationData} />
       </div>
 

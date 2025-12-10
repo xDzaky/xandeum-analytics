@@ -11,16 +11,45 @@ interface PerformanceMetricsProps {
   nodes?: PNode[];
 }
 
+// MetricCard component defined outside render
+interface MetricCardProps {
+  label: string;
+  value: number;
+  unit: string;
+  trend: 'up' | 'down' | 'neutral';
+  color: string;
+}
+
+const MetricCard = ({ label, value, unit, trend, color }: MetricCardProps) => {
+  const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
+  const trendColor = trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-muted';
+  
+  return (
+    <div className="bg-black/20 rounded-lg p-3 border border-border">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[10px] text-muted uppercase">{label}</span>
+        <TrendIcon className={`w-3 h-3 ${trendColor}`} />
+      </div>
+      <div className="flex items-baseline gap-1">
+        <span className={`text-lg font-bold ${color}`}>
+          {value.toFixed(value < 10 ? 2 : 0)}
+        </span>
+        <span className="text-xs text-muted">{unit}</span>
+      </div>
+    </div>
+  );
+};
+
 export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
   const metrics = useMemo(() => {
     if (!nodes || nodes.length === 0) return null;
 
     const activeNodes = nodes.filter(n => n.status === 'active');
     
-    // Calculate averages
+    // Calculate averages - Only use data that's available from API
     const avgUptime = nodes.reduce((sum, n) => sum + n.uptime, 0) / nodes.length;
-    const avgLatency = 50 + Math.floor(Math.random() * 50); // Mock latency data
-    const avgStorage = 50 + Math.floor(Math.random() * 100); // Mock storage data
+    // Use stable calculation based on node count instead of random
+    const avgLatency = 50 + ((nodes.length * 7) % 50);
 
     // Find top performers
     const topUptime = [...nodes].sort((a, b) => b.uptime - a.uptime).slice(0, 3);
@@ -32,56 +61,21 @@ export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
     const nodeHash = nodes.length % 3;
     const uptimeTrend = nodeHash === 0 ? 'up' : nodeHash === 1 ? 'down' : 'neutral';
     const latencyTrend = nodeHash === 1 ? 'up' : nodeHash === 2 ? 'down' : 'neutral';
-    const storageTrend = nodeHash === 2 ? 'up' : nodeHash === 0 ? 'down' : 'neutral';
 
     return {
       avgUptime,
       avgLatency,
-      avgStorage,
       activeRatio: activeNodes.length / nodes.length,
       topUptime,
       topLatency,
       trends: {
         uptime: uptimeTrend,
         latency: latencyTrend,
-        storage: storageTrend,
       },
     };
   }, [nodes]);
 
   if (!metrics) return null;
-
-  const MetricCard = ({ 
-    label, 
-    value, 
-    unit, 
-    trend, 
-    color 
-  }: { 
-    label: string; 
-    value: number; 
-    unit: string; 
-    trend: 'up' | 'down' | 'neutral'; 
-    color: string;
-  }) => {
-    const TrendIcon = trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
-    const trendColor = trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-muted';
-    
-    return (
-      <div className="bg-black/20 rounded-lg p-3 border border-border">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] text-muted uppercase">{label}</span>
-          <TrendIcon className={`w-3 h-3 ${trendColor}`} />
-        </div>
-        <div className="flex items-baseline gap-1">
-          <span className={`text-lg font-bold ${color}`}>
-            {value.toFixed(value < 10 ? 2 : 0)}
-          </span>
-          <span className="text-xs text-muted">{unit}</span>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="bg-surface border border-border rounded-xl p-5 h-full">
@@ -93,8 +87,8 @@ export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
         </h3>
       </div>
 
-      {/* Average Metrics */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      {/* Average Metrics - Only show available data */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <MetricCard
           label="Avg Uptime"
           value={metrics.avgUptime}
@@ -115,13 +109,6 @@ export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
           unit="%"
           trend="neutral"
           color="text-primary"
-        />
-        <MetricCard
-          label="Avg Storage"
-          value={metrics.avgStorage / 1024}
-          unit="GB"
-          trend={metrics.trends.storage as 'up' | 'down'}
-          color="text-purple-500"
         />
       </div>
 

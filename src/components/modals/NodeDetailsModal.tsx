@@ -97,7 +97,7 @@ export default function NodeDetailsModal({ node, onClose }: NodeDetailsModalProp
         {/* Content */}
         <div className="p-6 space-y-6">
           
-          {/* Quick Stats */}
+          {/* Quick Stats - Only show available data */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 text-center">
               <Activity className="w-4 h-4 text-green-400 mx-auto mb-1.5" />
@@ -106,8 +106,8 @@ export default function NodeDetailsModal({ node, onClose }: NodeDetailsModalProp
             </div>
             <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 text-center">
               <Zap className="w-4 h-4 text-yellow-400 mx-auto mb-1.5" />
-              <div className="text-lg font-bold text-white truncate">{node.performance?.latency?.toFixed(0) || 0}ms</div>
-              <div className="text-[10px] text-gray-500 uppercase">Latency</div>
+              <div className="text-lg font-bold text-white truncate">{node.performance?.latency?.toFixed(0) || 'N/A'}</div>
+              <div className="text-[10px] text-gray-500 uppercase">{node.performance?.latency ? 'Latency (ms)' : 'Latency'}</div>
             </div>
             <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3 text-center">
               <HardDrive className="w-4 h-4 text-blue-400 mx-auto mb-1.5" />
@@ -224,34 +224,12 @@ export default function NodeDetailsModal({ node, onClose }: NodeDetailsModalProp
             )}
           </div>
 
-          {/* Performance Metrics */}
-          {node.performance && (
+          {/* Performance Metrics - Only show if data exists */}
+          {node.performance && (node.performance.bandwidth || node.performance.rpcPort) && (
             <div className="space-y-3">
               <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide">Performance</h3>
               
-              {/* Storage Info */}
-              {node.performance.storageCapacity && (
-                <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs text-gray-500">Storage</span>
-                    <span className="text-xs text-white font-mono">
-                      {(node.performance.storageUsed / 1024 / 1024 / 1024).toFixed(2)} / {(node.performance.storageCapacity / 1024 / 1024 / 1024).toFixed(2)} GB
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-[#1F1F1F] rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-blue-500 to-blue-400 transition-all"
-                      style={{ width: `${(node.performance.storageUsed / node.performance.storageCapacity) * 100}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-[10px] text-gray-600">Used: {((node.performance.storageUsed / node.performance.storageCapacity) * 100).toFixed(1)}%</span>
-                    <span className="text-[10px] text-gray-600">Available: {((node.performance.storageCapacity - node.performance.storageUsed) / 1024 / 1024 / 1024).toFixed(2)} GB</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Bandwidth */}
+              {/* Bandwidth - Only if available */}
               {node.performance.bandwidth && (
                 <div className="bg-[#050505] border border-[#1F1F1F] rounded-lg p-3">
                   <div className="flex justify-between items-center">

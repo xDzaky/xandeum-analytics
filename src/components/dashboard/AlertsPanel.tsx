@@ -104,6 +104,10 @@ export default function AlertsPanel({ nodes }: AlertsPanelProps) {
     }
   };
 
+  const clearAlerts = () => {
+    setAlerts([]);
+  };
+
   const getAlertIcon = (type: Alert['type']) => {
     switch (type) {
       case 'critical':
@@ -140,17 +144,28 @@ export default function AlertsPanel({ nodes }: AlertsPanelProps) {
             Network Alerts
           </h3>
         </div>
-        <button
-          onClick={toggleAlerts}
-          className={`p-1.5 rounded-lg transition-colors ${
-            isEnabled 
-              ? 'text-primary hover:bg-primary/10' 
-              : 'text-muted hover:bg-white/5'
-          }`}
-          title={isEnabled ? 'Disable alerts' : 'Enable alerts'}
-        >
-          {isEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-        </button>
+        <div className="flex items-center gap-2">
+          {isEnabled && alerts.length > 0 && (
+            <button
+              onClick={clearAlerts}
+              className="px-2 py-1 rounded text-xs transition-colors bg-white/5 text-muted hover:bg-white/10 hover:text-white"
+              title="Clear all alerts"
+            >
+              Clear All
+            </button>
+          )}
+          <button
+            onClick={toggleAlerts}
+            className={`p-1.5 rounded-lg transition-colors ${
+              isEnabled 
+                ? 'text-primary hover:bg-primary/10' 
+                : 'text-muted hover:bg-white/5'
+            }`}
+            title={isEnabled ? 'Disable alerts' : 'Enable alerts'}
+          >
+            {isEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+          </button>
+        </div>
       </div>
 
       {/* Alerts List */}

@@ -69,7 +69,8 @@ export default function NetworkActivity({ nodes }: NetworkActivityProps) {
         severity,
       };
 
-      setEvents(prev => [newEvent, ...prev].slice(0, 8));
+      // Limit to 50 events to prevent lag
+      setEvents(prev => [newEvent, ...prev].slice(0, 50));
       setActivityLevel(Math.random() * 100);
     }, 3000); // New event every 3 seconds
 
@@ -110,20 +111,30 @@ export default function NetworkActivity({ nodes }: NetworkActivityProps) {
             {isLive ? 'LIVE' : 'PAUSED'} Activity
           </h3>
         </div>
-        <button
-          onClick={() => setIsLive(!isLive)}
-          className={`px-2 py-1 rounded text-xs transition-colors ${
-            isLive
-              ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
-              : 'bg-muted/10 text-muted hover:bg-muted/20'
-          }`}
-        >
-          {isLive ? 'Pause' : 'Resume'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setEvents([])}
+            className="px-2 py-1 rounded text-xs transition-colors bg-white/5 text-muted hover:bg-white/10 hover:text-white"
+            title="Clear events"
+          >
+            Clear
+          </button>
+          <button
+            onClick={() => setIsLive(!isLive)}
+            className={`px-2 py-1 rounded text-xs transition-colors ${
+              isLive
+                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20'
+                : 'bg-green-500/10 text-green-500 hover:bg-green-500/20'
+            }`}
+            title={isLive ? 'Pause monitoring' : 'Resume monitoring'}
+          >
+            {isLive ? 'Pause' : 'Resume'}
+          </button>
+        </div>
       </div>
 
       {/* Activity Meter */}
-      <div className="mb-4">
+      <div className="mb-4 shrink-0">
         <div className="flex items-center justify-between text-[10px] text-muted mb-1">
           <span>Network Activity Level</span>
           <span>{activityLevel.toFixed(0)}%</span>
@@ -136,8 +147,8 @@ export default function NetworkActivity({ nodes }: NetworkActivityProps) {
         </div>
       </div>
 
-      {/* Event Stream */}
-      <div className="flex-1 space-y-2 overflow-y-auto">
+      {/* Event Stream - Fixed height with scroll */}
+      <div className="space-y-2 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar flex-1">
         {events.length === 0 && (
           <div className="text-center py-8 text-muted text-xs">
             {isLive ? 'Monitoring network activity...' : 'Activity monitoring paused'}
@@ -163,7 +174,7 @@ export default function NetworkActivity({ nodes }: NetworkActivityProps) {
       </div>
 
       {/* Stats Summary */}
-      <div className="mt-4 pt-4 border-t border-border grid grid-cols-4 gap-2 text-center">
+      <div className="mt-4 pt-4 border-t border-border grid grid-cols-4 gap-2 text-center shrink-0">
         <div>
           <div className="text-xs font-bold text-green-500">
             {events.filter(e => e.type === 'node_join').length}
