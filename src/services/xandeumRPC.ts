@@ -35,7 +35,6 @@ class XandeumRPCService {
   private cacheTTL: number = 30000; // 30 seconds
   private useMock: boolean;
   private publicEndpoints: string[];
-  private currentEndpointIndex: number = 0;
 
   constructor(rpcUrl?: string) {
     // Public pRPC endpoints from Discord (verified working)
@@ -51,24 +50,37 @@ class XandeumRPCService {
       'http://207.244.255.1:6000',
     ];
     
-    // Use proxy in development to avoid CORS, direct URL in production
+    // Use CORS proxy for production (GitHub Pages) to avoid mixed content issues
     const isDevelopment = import.meta.env.MODE === 'development';
+    const isProduction = window.location.hostname.includes('github.io');
     const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || this.publicEndpoints[0];
     
-    // In development, use Vite proxy to avoid CORS issues
-    this.rpcUrl = isDevelopment ? '' : baseUrl; // Empty string uses current origin with /api prefix
+    // Use CORS proxy in production, Vite proxy in development
+    if (isProduction) {
+      // Use CORS proxy for GitHub Pages deployment
+      this.rpcUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl + '/rpc');
+    } else if (isDevelopment) {
+      // Use Vite proxy in development
+      this.rpcUrl = '/api/rpc';
+    } else {
+      // Direct access for other deployments
+      this.rpcUrl = baseUrl + '/rpc';
+    }
+    
     this.cache = new Map();
     
-    // Force mock data if public API is unreliable (v0.7.0 has known bugs)
+    // Force mock data if explicitly set
     const forceUseMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
     this.useMock = forceUseMock;
     
     console.log('🔧 XandeumRPC initialized:', {
       mode: import.meta.env.MODE,
-      rpcUrl: this.rpcUrl || '/api (via proxy)',
+      hostname: window.location.hostname,
+      isProduction,
+      rpcUrl: this.rpcUrl,
       useMock: this.useMock,
       fallbackEndpoints: this.publicEndpoints.length,
-      note: 'Will auto-rotate endpoints and fallback to mock data if all fail',
+      note: isProduction ? 'Using CORS proxy for GitHub Pages' : isDevelopment ? 'Using Vite proxy' : 'Direct access',
     });
   }
 
@@ -76,118 +88,91 @@ class XandeumRPCService {
    * Make JSON-RPC 2.0 call to pNode with automatic retry on different endpoints
    */
   private async makeRPCCall(method: string, params: unknown[] = []): Promise<unknown> {
-    const isDevelopment = import.meta.env.MODE === 'development';
+    const isProduction = window.location.hostname.includes('github.io');
     
-    // In development, try primary endpoint first via proxy
-    if (isDevelopment) {
-      try {
-        const endpoint = '/api/rpc';
-        console.log(`📡 Calling ${method} at ${endpoint} (via proxy)`);
-        
-        // Increase timeout to 10 seconds for gossip network
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            method: method,
-            params: params,
-            id: 1,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data: RPCResponse = await response.json();
-
-        if (data.error) {
-          throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
-        }
-
-        console.log(`✅ RPC call succeeded:`, data.result);
-        return data.result;
-      } catch (error) {
-        console.error(`❌ RPC call failed for method "${method}":`, error);
-        
-        // Fallback to mock data if enabled or on error
-        if (this.useMock) {
-          console.warn('⚠️ Using mock data as fallback');
-          return null;
-        }
-        
-        throw error;
-      }
-    } else {
-      // Production: Try multiple endpoints with rotation
-      const maxRetries = 3;
+    // Use configured endpoint (with CORS proxy if on GitHub Pages)
+    try {
+      console.log(`📡 Calling ${method} at ${this.rpcUrl}`);
       
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const currentEndpoint = this.publicEndpoints[this.currentEndpointIndex];
-        const endpoint = `${currentEndpoint}/rpc`;
+      // Increase timeout to 15 seconds for CORS proxy
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      
+      const response = await fetch(this.rpcUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: method,
+          params: params,
+          id: 1,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data: RPCResponse = await response.json();
+
+      if (data.error) {
+        throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
+      }
+
+      console.log(`✅ RPC call succeeded:`, data.result);
+      return data.result;
+    } catch (error) {
+      console.error(`❌ RPC call failed for method "${method}":`, error);
+      
+      // If on GitHub Pages and primary fails, try alternative CORS proxies
+      if (isProduction) {
+        const alternativeProxies = [
+          'https://api.allorigins.win/raw?url=',
+          'https://api.codetabs.com/v1/proxy?quest=',
+        ];
         
-        try {
-          console.log(`📡 Attempt ${attempt + 1}/${maxRetries}: Calling ${method} at ${endpoint}`);
-          
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 10000);
-          
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              jsonrpc: '2.0',
-              method: method,
-              params: params,
-              id: 1,
-            }),
-            signal: controller.signal,
-          });
-
-          clearTimeout(timeoutId);
-
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-          }
-
-          const data: RPCResponse = await response.json();
-
-          if (data.error) {
-            throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
-          }
-
-          console.log(`✅ RPC call succeeded on ${currentEndpoint}`);
-          return data.result;
-        } catch (error) {
-          console.error(`❌ Failed on ${currentEndpoint}:`, error);
-          
-          // Rotate to next endpoint
-          this.currentEndpointIndex = (this.currentEndpointIndex + 1) % this.publicEndpoints.length;
-          
-          // If last attempt, throw error
-          if (attempt === maxRetries - 1) {
-            if (this.useMock) {
-              console.warn('⚠️ All endpoints failed, using mock data');
-              return null;
+        for (const proxy of alternativeProxies) {
+          try {
+            const baseUrl = this.publicEndpoints[0] + '/rpc';
+            const proxyUrl = proxy + encodeURIComponent(baseUrl);
+            console.log(`🔄 Trying alternative proxy: ${proxy}`);
+            
+            const response = await fetch(proxyUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: method,
+                params: params,
+                id: 1,
+              }),
+            });
+            
+            if (response.ok) {
+              const data: RPCResponse = await response.json();
+              if (!data.error) {
+                console.log(`✅ Alternative proxy succeeded`);
+                return data.result;
+              }
             }
-            throw error;
+          } catch (proxyError) {
+            console.error(`❌ Alternative proxy failed:`, proxyError);
           }
-          
-          // Wait 1 second before retry
-          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
+      
+      // Fallback to mock data if all else fails
+      if (this.useMock) {
+        console.warn('⚠️ Using mock data as fallback');
+        return null;
+      }
+      
+      throw error;
     }
   }
 
