@@ -48,52 +48,66 @@ export const handler = async (event) => {
     ];
 
     // Try endpoints with timeout using AbortController
+    const errors = [];
     for (const endpoint of endpoints) {
       try {
         console.log(`🔄 Trying: ${endpoint}`);
         
-        // AbortController for timeout
+        // AbortController for timeout (5s for faster failover)
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
         
+        const startTime = Date.now();
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
           signal: controller.signal,
         });
+        const duration = Date.now() - startTime;
 
         clearTimeout(timeoutId);
 
+        console.log(`   Response: ${response.status} in ${duration}ms`);
+
         if (!response.ok) {
-          console.log(`⚠️ ${endpoint} returned ${response.status}`);
+          errors.push(`${endpoint}: HTTP ${response.status}`);
           continue;
         }
 
         const data = await response.json();
         
         if (data.result || data.error) {
-          console.log(`✅ Success from ${endpoint}`);
+          console.log(`✅ Success from ${endpoint} in ${duration}ms`);
+          console.log(`   Total count: ${data.result?.total_count || 'N/A'}`);
           return {
             statusCode: 200,
             headers,
             body: JSON.stringify(data),
           };
+        } else {
+          errors.push(`${endpoint}: No result/error in response`);
         }
       } catch (error) {
-        console.error(`❌ ${endpoint} failed:`, error.message);
+        const errMsg = error.name === 'AbortError' ? 'Timeout (5s)' : error.message;
+        console.error(`❌ ${endpoint}: ${errMsg}`);
+        errors.push(`${endpoint}: ${errMsg}`);
         continue;
       }
     }
 
-    // All failed
-    console.error('💥 All endpoints failed');
+    // All failed - log detailed errors
+    console.error('💥 All endpoints failed. Errors:', errors);
     return {
       statusCode: 503,
       headers,
       body: JSON.stringify({
         jsonrpc: '2.0',
-        error: { code: -32603, message: 'All endpoints failed' },
+        error: { 
+          code: -32603, 
+          message: 'All endpoints failed',
+          details: errors.slice(0, 3), // Include first 3 errors for debugging
+        },
         id: body.id || null,
       }),
     };
