@@ -52,18 +52,22 @@ class XandeumRPCService {
     
     // Use CORS proxy for production (GitHub Pages) to avoid mixed content issues
     const isDevelopment = import.meta.env.MODE === 'development';
-    const isProduction = window.location.hostname.includes('github.io');
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    const isVercel = window.location.hostname.includes('vercel.app');
     const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || this.publicEndpoints[0];
     
-    // Use CORS proxy in production, Vite proxy in development
-    if (isProduction) {
-      // Use CORS proxy for GitHub Pages deployment
+    // Route to appropriate proxy/endpoint
+    if (isGitHubPages) {
+      // GitHub Pages: Use external CORS proxy
       this.rpcUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl + '/rpc');
+    } else if (isVercel) {
+      // Vercel: Use our own serverless function proxy
+      this.rpcUrl = '/api/xandeum-proxy';
     } else if (isDevelopment) {
-      // Use Vite proxy in development
+      // Development: Use Vite proxy
       this.rpcUrl = '/api/rpc';
     } else {
-      // Direct access for Vercel/Netlify and other deployments
+      // Other deployments: Try direct access first
       this.rpcUrl = baseUrl + '/rpc';
     }
     
@@ -76,11 +80,12 @@ class XandeumRPCService {
     console.log('🔧 XandeumRPC initialized:', {
       mode: import.meta.env.MODE,
       hostname: window.location.hostname,
-      isProduction,
+      isGitHubPages,
+      isVercel,
       rpcUrl: this.rpcUrl,
       useMock: this.useMock,
       fallbackEndpoints: this.publicEndpoints.length,
-      note: isProduction ? 'Using CORS proxy for GitHub Pages' : isDevelopment ? 'Using Vite proxy' : 'Direct access',
+      note: isGitHubPages ? 'Using external CORS proxy' : isVercel ? 'Using Vercel serverless proxy' : isDevelopment ? 'Using Vite dev proxy' : 'Direct access',
     });
   }
 
@@ -88,9 +93,6 @@ class XandeumRPCService {
    * Make JSON-RPC 2.0 call to pNode with automatic retry on different endpoints
    */
   private async makeRPCCall(method: string, params: unknown[] = []): Promise<unknown> {
-    const isProduction = window.location.hostname.includes('github.io');
-    
-    // Use configured endpoint (with CORS proxy if on GitHub Pages)
     try {
       console.log(`📡 Calling ${method} at ${this.rpcUrl}`);
       
@@ -129,49 +131,7 @@ class XandeumRPCService {
     } catch (error) {
       console.error(`❌ RPC call failed for method "${method}":`, error);
       
-      // If on GitHub Pages and primary fails, try alternative CORS proxies
-      if (isProduction) {
-        const alternativeProxies = [
-          'https://api.allorigins.win/raw?url=',
-          'https://api.codetabs.com/v1/proxy?quest=',
-        ];
-        
-        for (const proxy of alternativeProxies) {
-          try {
-            const baseUrl = this.publicEndpoints[0] + '/rpc';
-            const proxyUrl = proxy + encodeURIComponent(baseUrl);
-            console.log(`🔄 Trying alternative proxy: ${proxy}`);
-            
-            const response = await fetch(proxyUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: method,
-                params: params,
-                id: 1,
-              }),
-            });
-            
-            if (response.ok) {
-              const data: RPCResponse = await response.json();
-              if (!data.error) {
-                console.log(`✅ Alternative proxy succeeded`);
-                return data.result;
-              }
-            }
-          } catch (proxyError) {
-            console.error(`❌ Alternative proxy failed:`, proxyError);
-          }
-        }
-      }
-      
-      // Fallback to mock data if all else fails
-      if (this.useMock) {
-        console.warn('⚠️ Using mock data as fallback');
-        return null;
-      }
-      
+      // No fallback needed - our proxy handles endpoint rotation
       throw error;
     }
   }
