@@ -26,9 +26,14 @@ const queryClient = new QueryClient({
 });
 
 function App() {
+  // Auto-detect base path: use root for Vercel, subpath for GitHub Pages
+  const basename = import.meta.env.PROD && window.location.hostname.includes('github.io') 
+    ? '/xandeum-analytics' 
+    : '/';
+
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename="/xandeum-analytics">
+      <BrowserRouter basename={basename}>
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Dashboard />} />

@@ -63,7 +63,7 @@ class XandeumRPCService {
       // Use Vite proxy in development
       this.rpcUrl = '/api/rpc';
     } else {
-      // Direct access for other deployments
+      // Direct access for Vercel/Netlify and other deployments
       this.rpcUrl = baseUrl + '/rpc';
     }
     
