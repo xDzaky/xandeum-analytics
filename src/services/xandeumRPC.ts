@@ -54,20 +54,24 @@ class XandeumRPCService {
     const isDevelopment = import.meta.env.MODE === 'development';
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isVercel = window.location.hostname.includes('vercel.app');
+    const isNetlify = window.location.hostname.includes('netlify.app');
     const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || this.publicEndpoints[0];
     
     // Route to appropriate proxy/endpoint
     if (isGitHubPages) {
       // GitHub Pages: Use external CORS proxy
       this.rpcUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl + '/rpc');
+    } else if (isNetlify) {
+      // Netlify: Use Netlify function proxy (SUPPORTS HTTP!)
+      this.rpcUrl = '/.netlify/functions/xandeum-proxy';
     } else if (isVercel) {
-      // Vercel: Use our own serverless function proxy
+      // Vercel: Use serverless function proxy (may have HTTP restrictions)
       this.rpcUrl = '/api/xandeum-proxy';
     } else if (isDevelopment) {
       // Development: Use Vite proxy
       this.rpcUrl = '/api/rpc';
     } else {
-      // Other deployments: Try direct access first
+      // Other deployments: Try direct access
       this.rpcUrl = baseUrl + '/rpc';
     }
     
@@ -82,10 +86,11 @@ class XandeumRPCService {
       hostname: window.location.hostname,
       isGitHubPages,
       isVercel,
+      isNetlify,
       rpcUrl: this.rpcUrl,
       useMock: this.useMock,
       fallbackEndpoints: this.publicEndpoints.length,
-      note: isGitHubPages ? 'Using external CORS proxy' : isVercel ? 'Using Vercel serverless proxy' : isDevelopment ? 'Using Vite dev proxy' : 'Direct access',
+      note: isGitHubPages ? 'Using external CORS proxy' : isNetlify ? 'Using Netlify function proxy' : isVercel ? 'Using Vercel serverless proxy' : isDevelopment ? 'Using Vite dev proxy' : 'Direct access',
     });
   }
 
