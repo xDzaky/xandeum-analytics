@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/xandeum-analytics/', // GitHub Pages base path
+  base: process.env.VERCEL ? '/' : '/xandeum-analytics/', // Auto-detect Vercel vs GitHub Pages
   server: {
     proxy: {
       // Proxy API requests to avoid CORS issues in development
