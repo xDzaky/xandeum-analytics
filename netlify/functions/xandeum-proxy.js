@@ -1,11 +1,10 @@
 /**
  * Netlify Function - Xandeum API Proxy
  * Netlify ALLOWS HTTP requests from functions!
+ * Uses native fetch (Node 18+)
  */
 
-const fetch = require('node-fetch');
-
-exports.handler = async (event) => {
+export const handler = async (event) => {
   // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
