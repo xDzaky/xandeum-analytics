@@ -148,9 +148,9 @@ export default function NodeList() {
               </tr>
             </thead>
             <tbody>
-              {filteredNodes.map((node) => (
+              {filteredNodes.map((node, index) => (
                 <tr
-                  key={node.id}
+                  key={`${node.id}-${node.publicKey}-${index}`}
                   className="border-b border-border last:border-0 hover:bg-card-hover transition-colors group"
                 >
                   <td className="py-3.5 px-4">

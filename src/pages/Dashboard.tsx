@@ -364,9 +364,9 @@ export default function Dashboard() {
           <div className="flex-1 overflow-y-auto">
             <table className="w-full text-left border-collapse">
               <tbody className="divide-y divide-border/50 text-xs">
-                {filteredNodes?.slice(0, 4).map((node) => (
+                {filteredNodes?.slice(0, 4).map((node, index) => (
                   <tr 
-                    key={node.id} 
+                    key={`recent-${node.id}-${node.publicKey}-${index}`}
                     onClick={() => setSelectedNode(node)}
                     className="group hover:bg-white/5 transition-colors cursor-pointer"
                   >

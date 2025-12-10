@@ -122,7 +122,7 @@ export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
           <div className="space-y-1.5">
             {metrics.topUptime.map((node, index) => (
               <div
-                key={node.id}
+                key={`top-uptime-${node.id}-${index}`}
                 className="flex items-center justify-between p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors"
               >
                 <div className="flex items-center gap-2">
@@ -157,7 +157,7 @@ export default function PerformanceMetrics({ nodes }: PerformanceMetricsProps) {
           <div className="space-y-1.5">
             {metrics.topLatency.map((node, index) => (
               <div
-                key={node.id}
+                key={`low-latency-${node.id}-${index}`}
                 className="flex items-center justify-between p-2 rounded-lg bg-black/20 hover:bg-black/30 transition-colors"
               >
                 <div className="flex items-center gap-2">
