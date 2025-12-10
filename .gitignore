@@ -1,0 +1,112 @@
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production build
+dist/
+dist-ssr/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.local
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+Thumbs.db
+.cache/
+
+# TypeScript
+*.tsbuildinfo
+
+# Deployment
+.vercel
+.netlify
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Documentation - Internal development notes (excluded from repository)
+# Only essential documentation will be included in the repository
+*.md
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!COPYRIGHT.md
+!NOTICE.md
+!SECURITY.md
+
+# Explicitly exclude all internal documentation
+*-REPORT.md
+*-TEST*.md
+*-IMPLEMENTATION*.md
+*-ASSESSMENT.md
+*-READINESS.md
+*-INTEGRATION.md
+*-UPDATE*.md
+*-FIX*.md
+*-STATUS.md
+*-SUMMARY.md
+*-SPEC*.md
+*-DESIGN*.md
+*-GUIDE*.md
+*-INDEX.md
+*-REFERENCE.md
+*-COMPLETE*.md
+*-FEATURES*.md
+API*.md
+CEK*.md
+PERTANYAAN*.md
+JAWABAN*.md
+QUICK*.md
+TROUBLESHOOTING.md
+PUBLIC*.md
+FINAL*.md
+DOCUMENTATION*.md
+REQUIREMENT*.md
+SUBMISSION*.md
+WINNING*.md
+MOBILE*.md
+POLISH*.md
+PRPC*.md
+CORS*.md
+GITHUB*.md
+PROJECT*.md
+tech-*.md
+design-*.md
+inform.md
+err.md
+chat-*.md
