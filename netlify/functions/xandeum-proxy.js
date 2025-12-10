@@ -34,65 +34,78 @@ export const handler = async (event) => {
     const body = JSON.parse(event.body);
     console.log('📨 Request method:', body.method);
 
-    // Xandeum endpoints
+    // Xandeum endpoints (prioritize stable ones based on Discord feedback)
     const endpoints = [
-      'http://192.190.136.36:6000/rpc',
+      'http://192.190.136.36:6000/rpc', // Brad's recommended
       'http://192.190.136.37:6000/rpc',
       'http://192.190.136.38:6000/rpc',
+      'http://192.190.136.28:6000/rpc', // From Discord chat
+      'http://192.190.136.29:6000/rpc',
       'http://161.97.97.41:6000/rpc',
       'http://173.212.203.145:6000/rpc',
-      'http://192.190.136.28:6000/rpc',
-      'http://192.190.136.29:6000/rpc',
       'http://173.212.220.65:6000/rpc',
       'http://207.244.255.1:6000/rpc',
     ];
 
     // Try endpoints with timeout using AbortController
     const errors = [];
-    for (const endpoint of endpoints) {
-      try {
-        console.log(`🔄 Trying: ${endpoint}`);
-        
-        // AbortController for timeout (5s for faster failover)
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const startTime = Date.now();
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        });
-        const duration = Date.now() - startTime;
+    
+    // If get-pods-with-stats fails, try fallback to get-pods for v0.6.0 nodes
+    const methodsToTry = body.method === 'get-pods-with-stats' 
+      ? ['get-pods-with-stats', 'get-pods']
+      : [body.method];
+    
+    for (const method of methodsToTry) {
+      console.log(`\n🔍 Trying method: ${method}`);
+      const requestBody = { ...body, method };
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`🔄 ${endpoint}`);
+          
+          // AbortController for timeout (5s for faster failover)
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const startTime = Date.now();
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+          });
+          const duration = Date.now() - startTime;
 
-        clearTimeout(timeoutId);
+          clearTimeout(timeoutId);
 
-        console.log(`   Response: ${response.status} in ${duration}ms`);
+          console.log(`   ${response.status} in ${duration}ms`);
 
-        if (!response.ok) {
-          errors.push(`${endpoint}: HTTP ${response.status}`);
+          if (!response.ok) {
+            errors.push(`${endpoint}: HTTP ${response.status}`);
+            continue;
+          }
+
+          const data = await response.json();
+          
+          if (data.result || data.error) {
+            console.log(`✅ SUCCESS from ${endpoint} with ${method} in ${duration}ms`);
+            if (data.result?.total_count) {
+              console.log(`   📊 Total nodes: ${data.result.total_count}`);
+            }
+            return {
+              statusCode: 200,
+              headers,
+              body: JSON.stringify(data),
+            };
+          } else {
+            errors.push(`${endpoint}: No result/error in response`);
+          }
+        } catch (error) {
+          const errMsg = error.name === 'AbortError' ? 'Timeout (5s)' : error.message;
+          console.error(`❌ ${endpoint}: ${errMsg}`);
+          errors.push(`${endpoint} (${method}): ${errMsg}`);
           continue;
         }
-
-        const data = await response.json();
-        
-        if (data.result || data.error) {
-          console.log(`✅ Success from ${endpoint} in ${duration}ms`);
-          console.log(`   Total count: ${data.result?.total_count || 'N/A'}`);
-          return {
-            statusCode: 200,
-            headers,
-            body: JSON.stringify(data),
-          };
-        } else {
-          errors.push(`${endpoint}: No result/error in response`);
-        }
-      } catch (error) {
-        const errMsg = error.name === 'AbortError' ? 'Timeout (5s)' : error.message;
-        console.error(`❌ ${endpoint}: ${errMsg}`);
-        errors.push(`${endpoint}: ${errMsg}`);
-        continue;
       }
     }
 
