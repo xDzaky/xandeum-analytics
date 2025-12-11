@@ -36,7 +36,7 @@ class XandeumRPCService {
   private useMock: boolean;
   private publicEndpoints: string[];
 
-  constructor(rpcUrl?: string) {
+  constructor() {
     // Public pRPC endpoints from Discord (verified working)
     this.publicEndpoints = [
       'http://192.190.136.36:6000',
@@ -50,29 +50,23 @@ class XandeumRPCService {
       'http://207.244.255.1:6000',
     ];
     
-    // Use CORS proxy for production (GitHub Pages) to avoid mixed content issues
+    // Railway backend URL - production proxy server
+    const RAILWAY_API = 'https://xandeum-analytics-production.up.railway.app/api/rpc';
+    
+    // Use Railway backend for all production deployments
     const isDevelopment = import.meta.env.MODE === 'development';
     const isGitHubPages = window.location.hostname.includes('github.io');
     const isVercel = window.location.hostname.includes('vercel.app');
     const isNetlify = window.location.hostname.includes('netlify.app');
-    const baseUrl = rpcUrl || import.meta.env.VITE_XANDEUM_RPC_URL || this.publicEndpoints[0];
     
     // Route to appropriate proxy/endpoint
-    if (isGitHubPages) {
-      // GitHub Pages: Use external CORS proxy
-      this.rpcUrl = 'https://corsproxy.io/?' + encodeURIComponent(baseUrl + '/rpc');
-    } else if (isNetlify) {
-      // Netlify: Use Netlify function proxy (SUPPORTS HTTP!)
-      this.rpcUrl = '/.netlify/functions/xandeum-proxy';
-    } else if (isVercel) {
-      // Vercel: Use serverless function proxy (may have HTTP restrictions)
-      this.rpcUrl = '/api/xandeum-proxy';
-    } else if (isDevelopment) {
-      // Development: Use Vite proxy
+    if (isDevelopment) {
+      // Development: Use Vite proxy for local testing
       this.rpcUrl = '/api/rpc';
     } else {
-      // Other deployments: Try direct access
-      this.rpcUrl = baseUrl + '/rpc';
+      // Production: Use Railway backend for ALL deployments (GitHub Pages, Netlify, Vercel)
+      // Railway allows HTTP requests and has HTTPS endpoint
+      this.rpcUrl = RAILWAY_API;
     }
     
     this.cache = new Map();
@@ -90,7 +84,7 @@ class XandeumRPCService {
       rpcUrl: this.rpcUrl,
       useMock: this.useMock,
       fallbackEndpoints: this.publicEndpoints.length,
-      note: isGitHubPages ? 'Using external CORS proxy' : isNetlify ? 'Using Netlify function proxy' : isVercel ? 'Using Vercel serverless proxy' : isDevelopment ? 'Using Vite dev proxy' : 'Direct access',
+      note: isDevelopment ? 'Using Vite dev proxy' : 'Using Railway backend (HTTPS)',
     });
   }
 
