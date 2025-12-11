@@ -1,0 +1,22 @@
+{
+  "name": "xandeum-analytics-backend",
+  "version": "1.0.0",
+  "description": "Backend proxy server for Xandeum pNode Analytics",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["xandeum", "pnode", "api", "proxy"],
+  "author": "",
+  "license": "PROPRIETARY",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
