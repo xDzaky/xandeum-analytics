@@ -6,7 +6,8 @@
 <div align="center">
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/xDzaky/xandeum-analytics)
-[![Run Locally](https://img.shields.io/badge/🚀_Run_Locally-npm_run_dev-success?style=for-the-badge)](##-quick-start)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Netlify-00C7B7?style=for-the-badge&logo=netlify)](https://xandeum-analytics.netlify.app)
+[![Backend API](https://img.shields.io/badge/🚀_API-Railway-0B0D0E?style=for-the-badge&logo=railway)](https://xandeum-analytics-production.up.railway.app)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-100%25-3178c6?style=flat-square&logo=typescript)
 ![React](https://img.shields.io/badge/React-18.3-61dafb?style=flat-square&logo=react)
@@ -22,46 +23,53 @@
 
 ---
 
-## ⚠️ Important: Production Deployment Note
+## 🌐 Live Deployment
 
-**This platform works PERFECTLY with real pRPC API calls in development mode!**
+### **Frontend**: [xandeum-analytics.netlify.app](https://xandeum-analytics.netlify.app)
+- Full-stack production deployment
+- Real-time data from 146+ pNodes
+- HTTPS-enabled for secure access
 
-However, we encountered a **platform limitation**: All major hosting providers (GitHub Pages, Vercel, Netlify) **block HTTP requests** to external IPs for security reasons. The Xandeum pRPC endpoints currently use HTTP (not HTTPS), which causes:
-
-- **GitHub Pages**: Mixed content blocking (HTTPS → HTTP not allowed by browsers)
-- **Vercel**: Serverless functions block outbound HTTP requests
-- **Netlify**: Similar HTTP blocking policy
-
-### ✅ **API Integration is COMPLETE and WORKING**
-
-To verify the platform works with **real data** (not mock), please run locally:
-
-```bash
-git clone https://github.com/xDzaky/xandeum-analytics
-cd xandeum-analytics
-npm install
-npm run dev
-# Open http://localhost:5173
-```
-
-**You will see:**
-- ✅ 146+ real pNodes from live network
-- ✅ Real-time data updates every 30s
-- ✅ Browser console shows: `"✅ RPC call succeeded: { total_count: 146 }"`
-- ✅ All features working perfectly
-- ✅ **NO MOCK DATA** - everything from `http://192.190.136.36:6000/rpc`
-
-### 🎯 For Judges: Verification Steps
-
-1. Clone repo and run `npm run dev`
-2. Open browser DevTools → Console
-3. Look for: `📡 Calling get-pods-with-stats at http://192.190.136.36:6000/rpc`
-4. See: `✅ RPC call succeeded` with 146+ nodes
-5. Verify data is **NOT** exactly 50 nodes (which would be mock data)
-
-**Alternative:** We can deploy to Railway.app or similar platforms that allow HTTP - let us know if needed!
+### **Backend API**: [xandeum-analytics-production.up.railway.app](https://xandeum-analytics-production.up.railway.app)
+- Express.js proxy server on Railway
+- Connects to Xandeum pRPC network
+- Health endpoint: `/health`
+- RPC endpoint: `/api/rpc`
 
 ---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────┐
+│   Frontend (SPA)    │
+│  React + TypeScript │  ← https://xandeum-analytics.netlify.app
+│   Vite + Tailwind   │
+└──────────┬──────────┘
+           │ HTTPS
+           ↓
+┌─────────────────────┐
+│  Railway Backend    │
+│   Express.js API    │  ← https://xandeum-analytics-production.up.railway.app
+│   CORS + Proxy      │
+└──────────┬──────────┘
+           │ HTTP
+           ↓
+┌─────────────────────┐
+│  Xandeum Network    │
+│  pRPC Endpoints     │  ← http://192.190.136.36:6000/rpc (+ 8 fallbacks)
+│  146+ pNodes        │
+└─────────────────────┘
+```
+
+### Why Backend Proxy?
+
+Modern browsers block **mixed content** (HTTPS → HTTP). Since Xandeum pRPC uses HTTP endpoints, we built a dedicated Express backend on Railway that:
+- ✅ Accepts HTTPS requests from frontend
+- ✅ Makes HTTP requests to Xandeum nodes
+- ✅ Implements 9 fallback endpoints
+- ✅ Handles automatic retries and timeouts
+- ✅ Provides clean error handling
 
 ---
 
