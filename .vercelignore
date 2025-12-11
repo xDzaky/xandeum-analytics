@@ -1,8 +1,0 @@
-# Vercel ignore - only upload source, not build artifacts
-dist
-node_modules
-.git
-.github
-*.log
-.env.local
-.env*.local

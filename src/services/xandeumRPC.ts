@@ -34,38 +34,20 @@ class XandeumRPCService {
   private cache: Map<string, { data: unknown; timestamp: number }>;
   private cacheTTL: number = 30000; // 30 seconds
   private useMock: boolean;
-  private publicEndpoints: string[];
 
   constructor() {
-    // Public pRPC endpoints from Discord (verified working)
-    this.publicEndpoints = [
-      'http://192.190.136.36:6000',
-      'http://192.190.136.37:6000',
-      'http://192.190.136.38:6000',
-      'http://192.190.136.28:6000',
-      'http://192.190.136.29:6000',
-      'http://161.97.97.41:6000',
-      'http://173.212.203.145:6000',
-      'http://173.212.220.65:6000',
-      'http://207.244.255.1:6000',
-    ];
-    
     // Railway backend URL - production proxy server
     const RAILWAY_API = 'https://xandeum-analytics-production.up.railway.app/api/rpc';
     
     // Use Railway backend for all production deployments
     const isDevelopment = import.meta.env.MODE === 'development';
-    const isGitHubPages = window.location.hostname.includes('github.io');
-    const isVercel = window.location.hostname.includes('vercel.app');
-    const isNetlify = window.location.hostname.includes('netlify.app');
     
     // Route to appropriate proxy/endpoint
     if (isDevelopment) {
       // Development: Use Vite proxy for local testing
       this.rpcUrl = '/api/rpc';
     } else {
-      // Production: Use Railway backend for ALL deployments (GitHub Pages, Netlify, Vercel)
-      // Railway allows HTTP requests and has HTTPS endpoint
+      // Production: Use Railway backend for ALL deployments
       this.rpcUrl = RAILWAY_API;
     }
     
@@ -74,18 +56,6 @@ class XandeumRPCService {
     // Force mock data if explicitly set
     const forceUseMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
     this.useMock = forceUseMock;
-    
-    console.log('🔧 XandeumRPC initialized:', {
-      mode: import.meta.env.MODE,
-      hostname: window.location.hostname,
-      isGitHubPages,
-      isVercel,
-      isNetlify,
-      rpcUrl: this.rpcUrl,
-      useMock: this.useMock,
-      fallbackEndpoints: this.publicEndpoints.length,
-      note: isDevelopment ? 'Using Vite dev proxy' : 'Using Railway backend (HTTPS)',
-    });
   }
 
   /**
@@ -93,9 +63,7 @@ class XandeumRPCService {
    */
   private async makeRPCCall(method: string, params: unknown[] = []): Promise<unknown> {
     try {
-      console.log(`📡 Calling ${method} at ${this.rpcUrl}`);
-      
-      // Increase timeout to 15 seconds for CORS proxy
+      // Increase timeout to 15 seconds for network requests
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       
@@ -125,12 +93,9 @@ class XandeumRPCService {
         throw new Error(`RPC Error: ${JSON.stringify(data.error)}`);
       }
 
-      console.log(`✅ RPC call succeeded:`, data.result);
       return data.result;
     } catch (error) {
-      console.error(`❌ RPC call failed for method "${method}":`, error);
-      
-      // No fallback needed - our proxy handles endpoint rotation
+      // Production-ready error handling - no console spam
       throw error;
     }
   }
@@ -145,22 +110,18 @@ class XandeumRPCService {
     if (useCache) {
       const cached = this.getCache<PNode[]>(cacheKey);
       if (cached) {
-        console.log('📦 Using cached nodes data');
         return cached;
       }
     }
 
     // If forced to use mock, skip API call
     if (this.useMock) {
-      console.warn('⚠️ Using mock data (VITE_USE_MOCK_DATA=true or forced)');
       const mockNodes = this.getMockNodes();
       this.setCache(cacheKey, mockNodes);
       return mockNodes;
     }
 
     try {
-      console.log('📡 Fetching nodes from pRPC:', this.rpcUrl || '/api (via proxy)');
-      
       const result = await this.makeRPCCall('get-pods-with-stats') as { pods: PodResponse[] };
       
       if (!result || !result.pods) {
@@ -170,20 +131,14 @@ class XandeumRPCService {
       const nodes = this.transformPodsToNodes(result.pods);
       
       if (nodes.length === 0) {
-        console.warn('⚠️ API returned 0 nodes, using mock data as fallback');
         const mockNodes = this.getMockNodes();
         this.setCache(cacheKey, mockNodes);
         return mockNodes;
       }
       
-      console.log(`✅ Received ${nodes.length} nodes from gossip network`);
-      
       this.setCache(cacheKey, nodes);
       return nodes;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error('❌ Failed to fetch from API, using mock data:', errorMsg);
-      
       // Auto-enable mock mode after failure
       this.useMock = true;
       
