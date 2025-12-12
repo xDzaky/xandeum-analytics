@@ -1,11 +1,11 @@
 /**
  * Real-time Network Activity Monitor
- * Shows live network activity with animated packet flow
+ * Shows live network activity derived from actual API data (nodes + network stats)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Activity, Zap, TrendingUp, TrendingDown } from 'lucide-react';
-import type { PNode } from '../../types';
+import type { PNode, NetworkStats } from '../../types';
 
 interface NetworkEvent {
   id: string;
@@ -17,65 +17,100 @@ interface NetworkEvent {
 
 interface NetworkActivityProps {
   nodes?: PNode[];
+  stats?: NetworkStats;
 }
 
-export default function NetworkActivity({ nodes }: NetworkActivityProps) {
+export default function NetworkActivity({ nodes, stats }: NetworkActivityProps) {
   const [events, setEvents] = useState<NetworkEvent[]>([]);
   const [activityLevel, setActivityLevel] = useState(0);
   const [isLive, setIsLive] = useState(true);
+  const prevNodesRef = useRef<PNode[] | undefined>(undefined);
+  const prevStatsRef = useRef<NetworkStats | undefined>(undefined);
 
   useEffect(() => {
-    if (!nodes || !isLive) return;
+    if (!isLive || !nodes || nodes.length === 0) return;
 
-    // Simulate network events based on node changes
-    const interval = setInterval(() => {
-      const eventTypes: NetworkEvent['type'][] = [
-        'node_join',
-        'node_leave',
-        'health_change',
-        'data_sync',
-      ];
+    const prevNodes = prevNodesRef.current;
+    const prevStats = prevStatsRef.current;
+    const now = new Date();
+    const newEvents: NetworkEvent[] = [];
 
-      const randomType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-      const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+    // Detect node joins and returns
+    if (prevNodes) {
+      const prevMap = new Map(prevNodes.map((n) => [n.id, n]));
+      const currentMap = new Map(nodes.map((n) => [n.id, n]));
 
-      let message = '';
-      let severity: NetworkEvent['severity'] = 'info';
+      nodes.forEach((node) => {
+        if (!prevMap.has(node.id)) {
+          newEvents.push({
+            id: `${node.id}-join-${now.getTime()}`,
+            type: 'node_join',
+            message: `Node ${node.id.slice(0, 10)}... joined the network`,
+            timestamp: now,
+            severity: 'success',
+          });
+        } else {
+          const prev = prevMap.get(node.id)!;
+          if (prev.status !== node.status && node.status === 'active') {
+            newEvents.push({
+              id: `${node.id}-back-${now.getTime()}`,
+              type: 'node_join',
+              message: `Node ${node.id.slice(0, 10)}... came back online`,
+              timestamp: now,
+              severity: 'success',
+            });
+          }
+        }
+      });
 
-      switch (randomType) {
-        case 'node_join':
-          message = `Node ${randomNode.id.slice(0, 8)}... joined the network`;
-          severity = 'success';
-          break;
-        case 'node_leave':
-          message = `Node ${randomNode.id.slice(0, 8)}... went offline`;
-          severity = 'warning';
-          break;
-        case 'health_change':
-          message = `Network health updated to ${Math.floor(Math.random() * 30 + 70)}%`;
-          severity = 'info';
-          break;
-        case 'data_sync':
-          message = `Data sync completed: ${Math.floor(Math.random() * 500 + 100)}MB`;
-          severity = 'success';
-          break;
+      prevNodes.forEach((node) => {
+        const current = currentMap.get(node.id);
+        if (!current) {
+          newEvents.push({
+            id: `${node.id}-left-${now.getTime()}`,
+            type: 'node_leave',
+            message: `Node ${node.id.slice(0, 10)}... left the network`,
+            timestamp: now,
+            severity: 'warning',
+          });
+        } else if (node.status === 'active' && current.status !== 'active') {
+          newEvents.push({
+            id: `${node.id}-offline-${now.getTime()}`,
+            type: 'node_leave',
+            message: `Node ${node.id.slice(0, 10)}... went offline`,
+            timestamp: now,
+            severity: 'warning',
+          });
+        }
+      });
+    }
+
+    // Detect health changes
+    if (stats && prevStats) {
+      const delta = stats.networkHealth - prevStats.networkHealth;
+      if (Math.abs(delta) >= 0.5) {
+        newEvents.push({
+          id: `health-${now.getTime()}`,
+          type: 'health_change',
+          message: `Network health ${delta >= 0 ? 'improved' : 'degraded'} to ${stats.networkHealth.toFixed(1)}% (Δ${delta.toFixed(1)})`,
+          timestamp: now,
+          severity: delta >= 0 ? 'success' : 'warning',
+        });
       }
+    }
 
-      const newEvent: NetworkEvent = {
-        id: `${Date.now()}-${Math.random()}`,
-        type: randomType,
-        message,
-        timestamp: new Date(),
-        severity,
-      };
+    if (newEvents.length > 0) {
+      setEvents((prev) => [...newEvents, ...prev].slice(0, 50));
+      const joinCount = newEvents.filter((e) => e.type === 'node_join').length;
+      const leaveCount = newEvents.filter((e) => e.type === 'node_leave').length;
+      const healthCount = newEvents.filter((e) => e.type === 'health_change').length;
+      const base = stats ? (stats.activeNodes / Math.max(1, stats.totalNodes)) * 70 : 40;
+      setActivityLevel(Math.min(100, base + (joinCount + leaveCount) * 8 + healthCount * 5));
+    }
 
-      // Limit to 50 events to prevent lag
-      setEvents(prev => [newEvent, ...prev].slice(0, 50));
-      setActivityLevel(Math.random() * 100);
-    }, 3000); // New event every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [nodes, isLive]);
+    prevNodesRef.current = nodes;
+    prevStatsRef.current = stats;
+  }, [nodes, stats, isLive]);
 
   const getEventIcon = (type: NetworkEvent['type']) => {
     switch (type) {

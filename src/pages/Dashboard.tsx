@@ -422,7 +422,7 @@ export default function Dashboard() {
         <PerformanceMetrics nodes={nodes} />
         
         {/* Real-time Network Activity */}
-        <NetworkActivity nodes={nodes} />
+        <NetworkActivity nodes={nodes} stats={stats} />
         
         {/* Alerts Panel */}
         <AlertsPanel nodes={nodes} />
@@ -457,4 +457,3 @@ export default function Dashboard() {
     </div>
   );
 }
-
