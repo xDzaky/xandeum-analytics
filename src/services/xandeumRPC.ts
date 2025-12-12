@@ -219,16 +219,26 @@ class XandeumRPCService {
    * Uses actual IP ranges from Discord-verified public endpoints
    */
   private inferLocation(ipAddress: string) {
-    // Known IP ranges from Xandeum public nodes (from Discord)
+    if (!ipAddress) {
+      return { country: 'Unknown', city: 'Unknown', latitude: 0, longitude: 0 };
+    }
+
+    // Known IP ranges from Xandeum public nodes (from Discord/community)
     const ipRanges: Record<string, { country: string; city: string; latitude: number; longitude: number }> = {
       // Germany nodes (Contabo/Hetzner)
       '173.212': { country: 'Germany', city: 'Frankfurt', latitude: 50.1109, longitude: 8.6821 },
-      
+      '116.203': { country: 'Germany', city: 'Nuremberg', latitude: 49.4521, longitude: 11.0767 },
+      '49.12': { country: 'Germany', city: 'Falkenstein', latitude: 50.4779, longitude: 12.3713 },
+      '157.90': { country: 'Germany', city: 'Nuremberg', latitude: 49.4521, longitude: 11.0767 },
+      '65.108': { country: 'Germany', city: 'Helsinki', latitude: 60.1699, longitude: 24.9384 },
+
       // USA nodes (multiple locations)
       '192.190': { country: 'USA', city: 'New York', latitude: 40.7128, longitude: -74.0060 },
       '161.97': { country: 'Netherlands', city: 'Amsterdam', latitude: 52.3676, longitude: 4.9041 },
       '207.244': { country: 'USA', city: 'Seattle', latitude: 47.6062, longitude: -122.3321 },
-      
+      '216.234': { country: 'USA', city: 'Dallas', latitude: 32.7767, longitude: -96.7970 },
+      '198.244': { country: 'USA', city: 'Los Angeles', latitude: 34.0522, longitude: -118.2437 },
+
       // Common cloud provider ranges
       '104.': { country: 'USA', city: 'Los Angeles', latitude: 34.0522, longitude: -118.2437 },
       '172.': { country: 'Singapore', city: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
@@ -237,11 +247,17 @@ class XandeumRPCService {
       '192.168': { country: 'Unknown', city: 'Private Network', latitude: 0, longitude: 0 },
     };
 
+    // Allow matching on first three octets (e.g., "216.234.134.")
     for (const [prefix, location] of Object.entries(ipRanges)) {
       if (ipAddress.startsWith(prefix)) {
         return location;
       }
     }
+
+    // Fallback: partial match on first two octets to reduce "Unknown"
+    const twoOctetPrefix = ipAddress.split('.').slice(0, 2).join('.');
+    const fallback = Object.entries(ipRanges).find(([prefix]) => prefix.startsWith(twoOctetPrefix));
+    if (fallback) return fallback[1];
 
     // Default location for unknown IPs
     return { country: 'Unknown', city: 'Unknown', latitude: 0, longitude: 0 };

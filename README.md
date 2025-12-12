@@ -378,9 +378,11 @@ Live at: **https://xdzaky.github.io/xandeum-analytics/**
 1. Build the project: `npm run build`
 2. Deploy to gh-pages branch
 3. Enable GitHub Pages in repository settings
-4. Set base path in `vite.config.ts`:
-```typescript
-base: '/xandeum-analytics/'
+4. Build with the GitHub Pages base path enabled (defaults to `/` for localhost/Netlify/Vercel):
+```bash
+GITHUB_PAGES=true npm run build
+# or
+DEPLOY_TARGET=github-pages npm run build
 ```
 
 ### Alternative Deployment Options

@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 import { historicalDataService } from '../../services/historicalData';
 
 type TimePeriod = '1h' | '6h' | '24h' | '7d';
@@ -13,7 +13,6 @@ type TimePeriod = '1h' | '6h' | '24h' | '7d';
 const WARNING_THRESHOLD = 75;
 
 interface ChartDataPoint {
-  time: string;
   health: number;
   timestamp: number;
 }
@@ -22,49 +21,77 @@ export default function NetworkHealthTimeline() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('24h');
 
   // Get historical data based on selected period
-  const { chartData, stats } = useMemo(() => {
+  const { chartData, stats, hours } = useMemo(() => {
     const hours = selectedPeriod === '1h' ? 1 : 
                   selectedPeriod === '6h' ? 6 : 
                   selectedPeriod === '24h' ? 24 : 
                   168; // 7 days
 
     const snapshots = historicalDataService.getSnapshots(hours);
-    const periodStats = historicalDataService.getStats(hours);
+    const stats = historicalDataService.getStatsFromSnapshots(snapshots);
 
-    // Transform snapshots to chart data
-    const data: ChartDataPoint[] = snapshots.map(snapshot => {
-      const date = new Date(snapshot.timestamp);
-      let timeFormat = '';
+    // Keep charts readable by limiting points while preserving the latest point
+    const maxPoints = selectedPeriod === '1h' ? 120 : selectedPeriod === '6h' ? 160 : selectedPeriod === '24h' ? 200 : 240;
+    const downsampled = historicalDataService.downsample(snapshots, maxPoints);
 
-      if (selectedPeriod === '1h') {
-        // Show minutes for 1 hour
-        timeFormat = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      } else if (selectedPeriod === '6h') {
-        // Show hours for 6 hours
-        timeFormat = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      } else if (selectedPeriod === '24h') {
-        // Show hours for 24 hours
-        timeFormat = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      } else {
-        // Show day and hour for 7 days
-        timeFormat = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit' });
-      }
-
-      return {
-        time: timeFormat,
-        health: snapshot.health,
-        timestamp: snapshot.timestamp,
-      };
-    });
+    const data: ChartDataPoint[] = downsampled.map(snapshot => ({
+      timestamp: snapshot.timestamp,
+      health: snapshot.health,
+    }));
 
     return {
       chartData: data,
-      stats: periodStats,
+      stats,
+      hours,
     };
   }, [selectedPeriod]);
 
   // Check if current health is below warning threshold
   const isWarning = chartData.length > 0 && chartData[chartData.length - 1].health < WARNING_THRESHOLD;
+
+  // Dynamic Y axis for better readability with padding
+  const paddedMin = Math.max(0, Math.floor((stats.min || 60) - 5));
+  const paddedMax = Math.min(100, Math.ceil((stats.max || 100) + 5));
+  const yDomain: [number, number] = [Math.min(60, paddedMin), Math.max(80, paddedMax)];
+
+  const formatTick = (value: number) => {
+    const date = new Date(value);
+    if (selectedPeriod === '7d') {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+    if (selectedPeriod === '24h') {
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+    }
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  };
+
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+    if (!active || !payload || !payload.length) return null;
+
+    const health = payload[0].value as number;
+    const delta = health - WARNING_THRESHOLD;
+    const status = health < WARNING_THRESHOLD ? 'Below threshold' : 'Above threshold';
+    const date = new Date(payload[0].payload.timestamp).toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    return (
+      <div className="rounded-lg border border-border bg-surface/80 px-3 py-2 shadow-lg backdrop-blur">
+        <div className="text-[11px] text-muted">{date}</div>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="text-sm font-semibold text-white">{health.toFixed(1)}%</span>
+          <span className={`text-[11px] ${delta < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+            {delta >= 0 ? '+' : ''}
+            {delta.toFixed(1)} vs {WARNING_THRESHOLD}%
+          </span>
+        </div>
+        <div className="text-[11px] text-muted mt-0.5">{status}</div>
+      </div>
+    );
+  };
 
   const periods: { value: TimePeriod; label: string }[] = [
     { value: '1h', label: '1h' },
@@ -102,7 +129,7 @@ export default function NetworkHealthTimeline() {
       </div>
 
       <ResponsiveContainer width="100%" height={200}>
-        <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+        <AreaChart data={chartData} margin={{ top: 5, right: 12, left: -10, bottom: 5 }}>
           <defs>
             <linearGradient id="healthGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1} />
@@ -113,20 +140,34 @@ export default function NetworkHealthTimeline() {
               <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.3} />
-          <XAxis 
-            dataKey="time" 
-            stroke="#737373" 
-            style={{ fontSize: '10px' }}
-            tick={{ fill: '#737373' }}
-            interval={selectedPeriod === '1h' ? 4 : selectedPeriod === '6h' ? 5 : 7}
+          <ReferenceArea
+            y1={0}
+            y2={WARNING_THRESHOLD}
+            fill="#ef4444"
+            fillOpacity={0.04}
+            strokeOpacity={0}
           />
-          <YAxis 
-            stroke="#737373" 
+          <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" opacity={0.35} vertical={false} />
+          <XAxis
+            dataKey="timestamp"
+            type="number"
+            stroke="#737373"
             style={{ fontSize: '10px' }}
-            domain={[60, 100]}
             tick={{ fill: '#737373' }}
-            ticks={[60, 70, 80, 90, 100]}
+            tickFormatter={formatTick}
+            domain={['dataMin', 'dataMax']}
+            tickLine={false}
+            axisLine={{ stroke: '#2a2a2a' }}
+            minTickGap={16}
+          />
+          <YAxis
+            stroke="#737373"
+            style={{ fontSize: '10px' }}
+            domain={yDomain}
+            tick={{ fill: '#737373' }}
+            ticks={[60, 70, 80, 90, 100].filter((t) => t >= yDomain[0] && t <= yDomain[1])}
+            tickLine={false}
+            axisLine={{ stroke: '#2a2a2a' }}
           />
           {/* Warning threshold line */}
           <ReferenceLine 
@@ -143,18 +184,8 @@ export default function NetworkHealthTimeline() {
             }}
           />
           <Tooltip
-            contentStyle={{ 
-              backgroundColor: '#0A0A0A', 
-              border: '1px solid #1F1F1F', 
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#e5e5e5'
-            }}
-            labelStyle={{ color: '#737373' }}
-            formatter={(value: number) => [
-              `${value.toFixed(1)}%`, 
-              value < WARNING_THRESHOLD ? 'Health (⚠️ Warning)' : 'Health'
-            ]}
+            content={<CustomTooltip />}
+            cursor={{ stroke: '#ffffff', strokeWidth: 0.5, strokeDasharray: '4 4', opacity: 0.3 }}
           />
           <Area 
             type="monotone" 
@@ -163,6 +194,8 @@ export default function NetworkHealthTimeline() {
             strokeWidth={2}
             fill={isWarning ? "url(#warningGradient)" : "url(#healthGradient)"} 
             animationDuration={800}
+            dot={chartData.length < 80 ? { r: 2.5, strokeWidth: 1, stroke: '#0f172a', fill: isWarning ? '#f87171' : '#60a5fa' } : false}
+            activeDot={{ r: 4, strokeWidth: 0, fill: '#ffffff', stroke: isWarning ? '#f87171' : '#60a5fa' }}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -179,7 +212,9 @@ export default function NetworkHealthTimeline() {
             <span>Below threshold</span>
           </div>
         )}
-        <div className="flex-1 text-right text-muted/50">{chartData.length} data points</div>
+        <div className="flex-1 text-right text-muted/50">
+          {chartData.length} pts · last {hours >= 24 ? `${Math.round(hours / 24)}d` : `${hours}h`}
+        </div>
       </div>
     </div>
   );

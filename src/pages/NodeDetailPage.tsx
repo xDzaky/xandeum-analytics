@@ -284,17 +284,35 @@ export default function NodeDetailPage() {
           <div className="space-y-6">
             {/* Location */}
             {node.location && (
-              <div className="bg-[#111111] rounded-lg border border-gray-800 p-5">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Globe className="w-5 h-5 text-blue-400" />
-                  Location
-                </h2>
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-xl font-bold text-white">{node.location.city}</div>
-                    <div className="text-sm text-blue-400">{node.location.country}</div>
+              <div className="bg-[#0d1014] rounded-lg border border-gray-800 p-5 relative overflow-hidden">
+                <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-transparent" />
+                <div className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <Globe className="w-5 h-5 text-blue-400" />
+                      Location
+                    </h2>
+                    <span className={`text-[10px] px-2 py-1 rounded-full border ${
+                      node.location.city !== 'Unknown' && node.location.country !== 'Unknown' && node.location.latitude !== 0
+                        ? 'border-green-500/30 text-green-400 bg-green-500/5'
+                        : 'border-yellow-500/30 text-yellow-400 bg-yellow-500/5'
+                    }`}>
+                      {node.location.city !== 'Unknown' && node.location.country !== 'Unknown' && node.location.latitude !== 0
+                        ? 'Located'
+                        : 'Needs public IP'}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-800">
+
+                  <div className="space-y-2">
+                    <div className="text-xl font-bold text-white">
+                      {node.location.city !== 'Unknown' ? node.location.city : 'Unknown'}
+                    </div>
+                    <div className="text-sm text-blue-400">
+                      {node.location.country !== 'Unknown' ? node.location.country : 'Unable to infer country'}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-800 mt-4">
                     <div>
                       <label className="text-gray-400 text-xs block mb-1">Latitude</label>
                       <code className="text-white text-sm">{node.location.latitude.toFixed(4)}°</code>
@@ -304,6 +322,15 @@ export default function NodeDetailPage() {
                       <code className="text-white text-sm">{node.location.longitude.toFixed(4)}°</code>
                     </div>
                   </div>
+
+                  {node.location.city === 'Unknown' && (
+                    <div className="mt-4 rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-blue-100">
+                      <div className="font-semibold mb-1">Why Unknown?</div>
+                      <p className="text-blue-200/80">
+                        Location is inferred from the gossip IP. Private/obfuscated IPs (10.x, 192.168.x, or Cloudflare tunnels) cannot be geolocated. Use a public gossip address to enable location.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

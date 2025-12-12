@@ -22,7 +22,8 @@ export interface NetworkSnapshot {
 class HistoricalDataService {
   private snapshots: HealthSnapshot[] = [];
   private networkSnapshots: NetworkSnapshot[] = [];
-  private maxSnapshots = 288; // Keep 24 hours at 5-minute intervals
+  // Keep up to 7 days of history; polling interval is ~30s so cap storage
+  private maxSnapshots = 7 * 24 * 120; // 7 days * 24h * (60/0.5) samples
   private storageKey = 'xandeum_health_history';
   private networkStorageKey = 'xandeum_network_timeline';
 
@@ -92,6 +93,27 @@ class HistoricalDataService {
   }
 
   /**
+   * Downsample a series to a maximum number of points while keeping the last point
+   */
+  downsample(snapshots: HealthSnapshot[], maxPoints: number): HealthSnapshot[] {
+    if (snapshots.length <= maxPoints) return snapshots;
+
+    const step = Math.ceil(snapshots.length / maxPoints);
+    const result: HealthSnapshot[] = [];
+
+    for (let i = 0; i < snapshots.length; i += step) {
+      result.push(snapshots[i]);
+    }
+
+    const last = snapshots[snapshots.length - 1];
+    if (result[result.length - 1]?.timestamp !== last.timestamp) {
+      result.push(last);
+    }
+
+    return result;
+  }
+
+  /**
    * Get network timeline snapshots for the last N hours
    */
   getNetworkTimeline(hours: number = 24): NetworkSnapshot[] {
@@ -117,26 +139,18 @@ class HistoricalDataService {
   private generateMockData(periodHours: number): HealthSnapshot[] {
     const data: HealthSnapshot[] = [];
     const now = Date.now();
-    const interval = periodHours <= 1 ? 2 * 60 * 1000 : // 2 minutes for 1h
-                     periodHours <= 6 ? 10 * 60 * 1000 : // 10 minutes for 6h
-                     30 * 60 * 1000; // 30 minutes for 24h+
+    const targetPoints = periodHours <= 1 ? 60 : periodHours <= 6 ? 84 : periodHours <= 24 ? 96 : 140;
+    const interval = Math.max(60_000, Math.floor((periodHours * 60 * 60 * 1000) / targetPoints)); // At least 1 minute
 
-    const points = periodHours <= 1 ? 30 : 
-                   periodHours <= 6 ? 36 : 
-                   48;
-
-    for (let i = points; i >= 0; i--) {
+    for (let i = targetPoints; i >= 0; i--) {
       const timestamp = now - (i * interval);
       
-      // Simulate gradual health degradation
-      let health = 95;
-      if (i < points * 0.25) {
-        health = 75 + Math.random() * 10; // Recent: 75-85%
-      } else if (i < points * 0.5) {
-        health = 85 + Math.random() * 10; // Mid: 85-95%
-      } else {
-        health = 92 + Math.random() * 6; // Earlier: 92-98%
-      }
+      // Simulate gradual health moves with occasional dips
+      const progress = 1 - i / targetPoints;
+      const base = 92 - progress * 8; // slight downward drift
+      const volatility = periodHours > 24 ? 4 : 6;
+      const dip = Math.random() < 0.1 ? -8 * Math.random() : 0;
+      const health = Math.max(55, Math.min(98, base + (Math.random() * volatility) + dip));
 
       data.push({
         timestamp,
@@ -181,8 +195,8 @@ class HistoricalDataService {
       if (stored) {
         const parsed = JSON.parse(stored);
         this.snapshots = parsed.filter((s: HealthSnapshot) => {
-          // Keep only snapshots from last 24 hours
-          return s.timestamp > Date.now() - (24 * 60 * 60 * 1000);
+          // Keep only snapshots from last 7 days
+          return s.timestamp > Date.now() - (7 * 24 * 60 * 60 * 1000);
         });
       }
 
@@ -191,8 +205,8 @@ class HistoricalDataService {
       if (networkStored) {
         const parsed = JSON.parse(networkStored);
         this.networkSnapshots = parsed.filter((s: NetworkSnapshot) => {
-          // Keep only snapshots from last 24 hours
-          return s.timestamp > Date.now() - (24 * 60 * 60 * 1000);
+          // Keep only snapshots from last 7 days
+          return s.timestamp > Date.now() - (7 * 24 * 60 * 60 * 1000);
         });
       }
     } catch (error) {
@@ -215,7 +229,13 @@ class HistoricalDataService {
    */
   getStats(periodHours: number): { min: number; max: number; avg: number } {
     const snapshots = this.getSnapshots(periodHours);
-    
+    return this.getStatsFromSnapshots(snapshots);
+  }
+
+  /**
+   * Compute stats from a provided snapshot series
+   */
+  getStatsFromSnapshots(snapshots: HealthSnapshot[]): { min: number; max: number; avg: number } {
     if (snapshots.length === 0) {
       return { min: 0, max: 0, avg: 0 };
     }
