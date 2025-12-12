@@ -10,6 +10,7 @@ import NetworkActivity from '../components/dashboard/NetworkActivity';
 import NodeDetailsModal from '../components/modals/NodeDetailsModal';
 import { useNodes, useNetworkStats } from '../hooks/useNodes';
 import { formatNumber, formatTimeAgo } from '../utils/formatters';
+import { exportNodesToCSV, exportNodesToJSON } from '../utils/exporters';
 import { generateNetworkStats } from '../utils/calculations';
 import { Server, Globe, Wifi, TriangleAlert, MoreHorizontal, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -435,9 +436,26 @@ export default function Dashboard() {
         </div>
         <div className="md:col-span-3 flex items-end justify-end pb-2">
           <div className="flex gap-2">
-            <button className="bg-surface border border-border text-xs text-muted hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors font-mono">CSV</button>
-            <button className="bg-surface border border-border text-xs text-muted hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors font-mono">JSON</button>
-            <button className="bg-primary text-black text-xs font-medium px-3 py-1.5 rounded hover:bg-primary/90 transition-colors">Docs</button>
+            <button
+              onClick={() => nodes && exportNodesToCSV(nodes)}
+              className="bg-surface border border-border text-xs text-muted hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!nodes || nodes.length === 0}
+            >
+              CSV
+            </button>
+            <button
+              onClick={() => nodes && exportNodesToJSON(nodes)}
+              className="bg-surface border border-border text-xs text-muted hover:text-white px-3 py-1.5 rounded hover:bg-white/5 transition-colors font-mono disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!nodes || nodes.length === 0}
+            >
+              JSON
+            </button>
+            <button
+              onClick={() => window.open('https://github.com/xDzaky/xandeum-analytics', '_blank')}
+              className="bg-primary text-black text-xs font-medium px-3 py-1.5 rounded hover:bg-primary/90 transition-colors"
+            >
+              Docs
+            </button>
           </div>
         </div>
       </div>

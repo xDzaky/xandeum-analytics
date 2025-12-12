@@ -33,7 +33,6 @@ class XandeumRPCService {
   private rpcUrl: string;
   private cache: Map<string, { data: unknown; timestamp: number }>;
   private cacheTTL: number = 30000; // 30 seconds
-  private useMock: boolean;
 
   constructor() {
     // Railway backend URL - production proxy server
@@ -53,9 +52,6 @@ class XandeumRPCService {
     
     this.cache = new Map();
     
-    // Force mock data if explicitly set
-    const forceUseMock = import.meta.env.VITE_USE_MOCK_DATA === 'true';
-    this.useMock = forceUseMock;
   }
 
   /**
@@ -114,13 +110,6 @@ class XandeumRPCService {
       }
     }
 
-    // If forced to use mock, skip API call
-    if (this.useMock) {
-      const mockNodes = this.getMockNodes();
-      this.setCache(cacheKey, mockNodes);
-      return mockNodes;
-    }
-
     try {
       const result = await this.makeRPCCall('get-pods-with-stats') as { pods: PodResponse[] };
       
@@ -129,23 +118,12 @@ class XandeumRPCService {
       }
 
       const nodes = this.transformPodsToNodes(result.pods);
-      
-      if (nodes.length === 0) {
-        const mockNodes = this.getMockNodes();
-        this.setCache(cacheKey, mockNodes);
-        return mockNodes;
-      }
-      
+
       this.setCache(cacheKey, nodes);
       return nodes;
     } catch (error) {
-      // Auto-enable mock mode after failure
-      this.useMock = true;
-      
-      // Fallback to mock data
-      const mockNodes = this.getMockNodes();
-      this.setCache(cacheKey, mockNodes);
-      return mockNodes;
+      // Surface the error; caller will decide what to show
+      throw error;
     }
   }
 
@@ -348,47 +326,7 @@ class XandeumRPCService {
     this.cache.set(key, { data, timestamp: Date.now() });
   }
 
-  /**
-   * Mock data for fallback (keeping existing implementation)
-   */
-  getMockNodes(): PNode[] {
-    const locations = [
-      { country: 'USA', city: 'New York', latitude: 40.7128, longitude: -74.0060 },
-      { country: 'Germany', city: 'Berlin', latitude: 52.5200, longitude: 13.4050 },
-      { country: 'Singapore', city: 'Singapore', latitude: 1.3521, longitude: 103.8198 },
-      { country: 'Japan', city: 'Tokyo', latitude: 35.6762, longitude: 139.6503 },
-      { country: 'UK', city: 'London', latitude: 51.5074, longitude: -0.1278 },
-    ];
-
-    const statuses: Array<'active' | 'inactive' | 'syncing'> = ['active', 'active', 'active', 'inactive', 'syncing'];
-    const versions = ['0.7.0', '0.6.0', '0.7.0', '0.6.5', '0.7.0'];
-
-    return Array.from({ length: 50 }, (_, i) => ({
-      id: `node-${i + 1}`,
-      publicKey: this.generateMockPublicKey(),
-      ipAddress: `192.168.${Math.floor(i / 256)}.${i % 256}`,
-      port: 9001,
-      version: versions[i % versions.length],
-      status: statuses[i % statuses.length],
-      lastSeen: new Date(Date.now() - Math.random() * 3600000),
-      firstSeen: new Date(Date.now() - Math.random() * 86400000 * 30),
-      uptime: 95 + Math.random() * 4.9,
-      location: locations[i % locations.length],
-      performance: {
-        latency: 20 + Math.random() * 100,
-        storageCapacity: Math.floor(100 * Math.random()) * 1e9,
-        storageUsed: Math.floor(50 * Math.random()) * 1e9,
-        bandwidth: 1000000 * Math.random(),
-      },
-    }));
-  }
-
-  private generateMockPublicKey(): string {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789';
-    return Array.from({ length: 44 }, () => 
-      chars.charAt(Math.floor(Math.random() * chars.length))
-    ).join('');
-  }
+  // Mock data helpers removed to enforce real API usage
 }
 
 // Export singleton instance

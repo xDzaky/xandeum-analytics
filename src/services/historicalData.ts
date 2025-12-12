@@ -87,9 +87,7 @@ class HistoricalDataService {
     if (filtered.length > 0) {
       return filtered;
     }
-
-    // Otherwise generate mock data for the period
-    return this.generateMockData(periodHours);
+    return [];
   }
 
   /**
@@ -133,36 +131,7 @@ class HistoricalDataService {
     return [];
   }
 
-  /**
-   * Generate mock historical data
-   */
-  private generateMockData(periodHours: number): HealthSnapshot[] {
-    const data: HealthSnapshot[] = [];
-    const now = Date.now();
-    const targetPoints = periodHours <= 1 ? 60 : periodHours <= 6 ? 84 : periodHours <= 24 ? 96 : 140;
-    const interval = Math.max(60_000, Math.floor((periodHours * 60 * 60 * 1000) / targetPoints)); // At least 1 minute
-
-    for (let i = targetPoints; i >= 0; i--) {
-      const timestamp = now - (i * interval);
-      
-      // Simulate gradual health moves with occasional dips
-      const progress = 1 - i / targetPoints;
-      const base = 92 - progress * 8; // slight downward drift
-      const volatility = periodHours > 24 ? 4 : 6;
-      const dip = Math.random() < 0.1 ? -8 * Math.random() : 0;
-      const health = Math.max(55, Math.min(98, base + (Math.random() * volatility) + dip));
-
-      data.push({
-        timestamp,
-        health: parseFloat(health.toFixed(1)),
-        activeNodes: Math.floor(20 + Math.random() * 2),
-        totalNodes: 21,
-        averageUptime: parseFloat((health + Math.random() * 5).toFixed(1)),
-      });
-    }
-
-    return data;
-  }
+  // Removed mock generation to rely solely on live data
 
   /**
    * Save to localStorage
